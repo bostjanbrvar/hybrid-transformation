@@ -22,6 +22,14 @@ import {
   type DayLog,
   type LoggedExercise,
 } from "@/lib/storage";
+import {
+  isSupported,
+  getPermission,
+  requestPermission,
+  startReminders,
+  stopReminders,
+  isRunning,
+} from "@/lib/reminders";
 
 /* ---------- Pomožno ---------- */
 
@@ -125,6 +133,9 @@ export default function Home() {
 
         {/* 5. Današnje navade */}
         <HabitsCard habits={log?.habits ?? null} onToggle={handleToggleHabit} />
+
+        {/* 6. Opomniki */}
+        <RemindersCard />
 
         {/* Mantra (iz RULES) */}
         <p className="mt-2 px-2 text-center text-xs italic text-violet-300/60">
@@ -556,6 +567,130 @@ function HabitsCard({
           </li>
         ))}
       </ul>
+    </Card>
+  );
+}
+
+/* ---------- 6. Opomniki ---------- */
+
+function RemindersCard() {
+  // supported === null pomeni "še ne vemo" (pred montažo) → SSR-safe.
+  const [supported, setSupported] = useState<boolean | null>(null);
+  const [permission, setPermission] =
+    useState<NotificationPermission>("default");
+  const [on, setOn] = useState(false);
+
+  useEffect(() => {
+    const sup = isSupported();
+    setSupported(sup);
+    if (sup) {
+      setPermission(getPermission());
+      setOn(isRunning());
+    }
+  }, []);
+
+  async function enable() {
+    const perm = await requestPermission();
+    setPermission(perm);
+    if (perm === "granted") {
+      startReminders();
+      setOn(true);
+    }
+  }
+
+  function toggle() {
+    if (on) {
+      stopReminders();
+      setOn(false);
+      return;
+    }
+    if (permission === "granted") {
+      startReminders();
+      setOn(true);
+    } else {
+      void enable();
+    }
+  }
+
+  const statusText =
+    permission === "granted"
+      ? "Dovoljeno"
+      : permission === "denied"
+        ? "Zavrnjeno"
+        : "Ni odločeno";
+
+  const statusClass =
+    permission === "granted"
+      ? "bg-emerald-500/20 text-emerald-200"
+      : permission === "denied"
+        ? "bg-rose-500/20 text-rose-300"
+        : "bg-white/10 text-violet-200/80";
+
+  return (
+    <Card>
+      <CardLabel>Opomniki</CardLabel>
+
+      {supported === null ? (
+        <Placeholder lines={2} />
+      ) : !supported ? (
+        <p className="mt-3 text-sm text-violet-200/70">
+          Tvoj brskalnik ne podpira opomnikov.
+        </p>
+      ) : (
+        <>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <span className="text-sm text-violet-100/90">Stanje dovoljenja</span>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusClass}`}
+            >
+              {statusText}
+            </span>
+          </div>
+
+          {permission === "denied" ? (
+            <p className="mt-3 text-xs text-violet-300/70">
+              Opomniki so zavrnjeni. Omogoči jih v nastavitvah brskalnika za to
+              stran.
+            </p>
+          ) : permission !== "granted" ? (
+            <button
+              type="button"
+              onClick={() => void enable()}
+              className="mt-4 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition active:scale-[0.98]"
+            >
+              Vklopi opomnike
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-pressed={on}
+              className={`mt-4 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-bold transition active:scale-[0.98] ${
+                on
+                  ? "border-violet-400/50 bg-violet-500/20 text-white"
+                  : "border-white/15 bg-black/20 text-violet-100/80"
+              }`}
+            >
+              <span>{on ? "Opomniki vklopljeni" : "Opomniki izklopljeni"}</span>
+              <span
+                className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                  on ? "bg-violet-400" : "bg-white/20"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${
+                    on ? "left-[22px]" : "left-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          )}
+
+          <p className="mt-3 text-xs text-violet-300/60">
+            Delujejo le, ko je ta zavihek odprt.
+          </p>
+        </>
+      )}
     </Card>
   );
 }
