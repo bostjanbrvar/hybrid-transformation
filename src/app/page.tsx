@@ -24,13 +24,13 @@ import {
   type LoggedExercise,
 } from "@/lib/storage";
 import {
-  isSupported,
-  getPermission,
-  requestPermission,
-  startReminders,
-  stopReminders,
-  isRunning,
-} from "@/lib/reminders";
+  isNative,
+  isReminderSupported,
+  getReminderPermission,
+  isRemindersActive,
+  enableReminders,
+  disableReminders,
+} from "@/lib/reminderScheduler";
 
 /* ---------- Pomožno ---------- */
 
@@ -608,36 +608,37 @@ function RemindersCard() {
   const [permission, setPermission] =
     useState<NotificationPermission>("default");
   const [on, setOn] = useState(false);
+  const [native, setNative] = useState(false);
 
   useEffect(() => {
-    const sup = isSupported();
-    setSupported(sup);
-    if (sup) {
-      setPermission(getPermission());
-      setOn(isRunning());
-    }
+    void (async () => {
+      const sup = isReminderSupported();
+      setSupported(sup);
+      setNative(isNative());
+      if (sup) {
+        setPermission(await getReminderPermission());
+        setOn(await isRemindersActive());
+      }
+    })();
   }, []);
 
   async function enable() {
-    const perm = await requestPermission();
+    const perm = await enableReminders();
     setPermission(perm);
-    if (perm === "granted") {
-      startReminders();
-      setOn(true);
-    }
+    if (perm === "granted") setOn(await isRemindersActive());
   }
 
-  function toggle() {
+  async function toggle() {
     if (on) {
-      stopReminders();
+      await disableReminders();
       setOn(false);
       return;
     }
     if (permission === "granted") {
-      startReminders();
-      setOn(true);
+      await enableReminders();
+      setOn(await isRemindersActive());
     } else {
-      void enable();
+      await enable();
     }
   }
 
@@ -678,8 +679,9 @@ function RemindersCard() {
 
           {permission === "denied" ? (
             <p className="mt-3 text-xs text-[#F5F5F7]/60">
-              Opomniki so zavrnjeni. Omogoči jih v nastavitvah brskalnika za to
-              stran.
+              Opomniki so zavrnjeni. Omogoči jih v nastavitvah{" "}
+              {native ? "naprave (aplikacija HYBRID)" : "brskalnika za to stran"}
+              .
             </p>
           ) : permission !== "granted" ? (
             <button
@@ -716,7 +718,9 @@ function RemindersCard() {
           )}
 
           <p className="mt-3 text-xs text-[#F5F5F7]/40">
-            Delujejo le, ko je ta zavihek odprt.
+            {native
+              ? "Delujejo tudi v ozadju (nativni opomniki na napravi)."
+              : "Delujejo le, ko je ta zavihek odprt."}
           </p>
         </>
       )}
