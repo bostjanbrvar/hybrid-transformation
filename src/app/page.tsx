@@ -95,14 +95,14 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-full w-full bg-gradient-to-b from-[#1b0d33] via-[#160a2b] to-[#0c0617] text-violet-50">
+    <div className="min-h-full w-full bg-black text-[#F5F5F7]">
       <main className="mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pb-16 pt-8">
         {/* 1. Glava */}
         <header className="mb-1 px-1">
           <h1 className="text-3xl font-black tracking-tight text-white">
             HYBRID
           </h1>
-          <p className="mt-1 text-sm font-medium text-violet-300/80">
+          <p className="mt-1 text-sm font-medium text-[#A855F7]/80">
             {now ? formatToday(now) : " "}
           </p>
         </header>
@@ -138,7 +138,7 @@ export default function Home() {
         <RemindersCard />
 
         {/* Mantra (iz RULES) */}
-        <p className="mt-2 px-2 text-center text-xs italic text-violet-300/60">
+        <p className="mt-2 px-2 text-center text-xs italic text-[#F5F5F7]/40">
           {RULES.mantra}
         </p>
       </main>
@@ -157,7 +157,7 @@ function Card({
 }) {
   return (
     <section
-      className={`rounded-3xl border border-white/10 bg-white/[0.06] p-5 shadow-lg shadow-black/20 backdrop-blur-sm ${className}`}
+      className={`rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-5 shadow-lg shadow-black/40 ${className}`}
     >
       {children}
     </section>
@@ -166,7 +166,7 @@ function Card({
 
 function CardLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-300/70">
+    <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
       {children}
     </p>
   );
@@ -248,11 +248,11 @@ function TrainingCard({
         <>
           <div className="mt-2 flex items-baseline justify-between gap-3">
             <h2 className="text-xl font-bold text-white">{heading}</h2>
-            <span className="shrink-0 rounded-full bg-violet-500/20 px-3 py-1 text-xs font-semibold text-violet-200">
+            <span className="shrink-0 rounded-full bg-[#9333EA]/20 px-3 py-1 text-xs font-semibold text-[#A855F7]">
               {training.focus}
             </span>
           </div>
-          <p className="mt-1 text-sm text-violet-200/70">{training.subtitle}</p>
+          <p className="mt-1 text-sm text-[#F5F5F7]/60">{training.subtitle}</p>
 
           {/* Recovery dan: samo seznam aktivnosti, brez vnosa serij. */}
           {isRecovery ? (
@@ -260,7 +260,7 @@ function TrainingCard({
               {training.exercises.map((ex, i) => (
                 <li
                   key={i}
-                  className="rounded-xl bg-black/20 px-3 py-2.5 text-sm font-medium text-violet-50"
+                  className="rounded-xl bg-black/20 px-3 py-2.5 text-sm font-medium text-[#F5F5F7]"
                 >
                   {ex.name}
                 </li>
@@ -274,12 +274,12 @@ function TrainingCard({
                   key={i}
                   className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2.5"
                 >
-                  <span className="text-sm font-medium text-violet-50">
+                  <span className="text-sm font-medium text-[#F5F5F7]">
                     {ex.name}
                   </span>
-                  <span className="shrink-0 text-right text-xs text-violet-300/80">
+                  <span className="shrink-0 text-right text-xs text-[#F5F5F7]/60">
                     {ex.defaultWeightKg != null && (
-                      <span className="font-semibold text-violet-200">
+                      <span className="font-semibold text-[#A855F7]">
                         {ex.defaultWeightKg} kg
                       </span>
                     )}
@@ -294,18 +294,18 @@ function TrainingCard({
             <div className="mt-4 flex flex-col gap-3">
               {training.exercises.map((ex, i) => (
                 <div key={i} className="rounded-2xl bg-black/20 p-3">
-                  <p className="text-sm font-semibold text-violet-50">
+                  <p className="text-sm font-semibold text-[#F5F5F7]">
                     {ex.name}
                   </p>
 
                   {ex.cooldown ? (
-                    <p className="mt-1 text-xs italic text-violet-300/60">
+                    <p className="mt-1 text-xs italic text-[#F5F5F7]/40">
                       Cool-down
                     </p>
                   ) : (
                     <>
                       <label className="mt-3 flex items-center justify-between gap-3">
-                        <span className="text-xs font-medium text-violet-200/80">
+                        <span className="text-xs font-medium text-[#F5F5F7]/70">
                           Max teža (kg)
                         </span>
                         <input
@@ -315,14 +315,14 @@ function TrainingCard({
                           min="0"
                           value={weights[ex.name] ?? ""}
                           onChange={(e) => changeWeight(ex.name, e.target.value)}
-                          className="w-24 rounded-lg border border-white/15 bg-black/30 px-2 py-1.5 text-right text-sm font-semibold text-white outline-none focus:border-violet-400/60"
+                          className="w-24 rounded-lg border border-[#9333EA]/30 bg-black/40 px-2 py-1.5 text-right text-sm font-semibold text-[#F5F5F7] outline-none focus:border-[#A855F7]"
                         />
                       </label>
 
                       <div className="mt-3 grid grid-cols-4 gap-2">
                         {Array.from({ length: SET_COUNT }, (_, s) => (
                           <label key={s} className="flex flex-col gap-1">
-                            <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-violet-300/70">
+                            <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-[#A855F7]/70">
                               S{s + 1}
                             </span>
                             <input
@@ -334,7 +334,7 @@ function TrainingCard({
                               onChange={(e) =>
                                 changeSet(ex.name, s, e.target.value)
                               }
-                              className="w-full rounded-lg border border-white/15 bg-black/30 px-1 py-1.5 text-center text-sm font-semibold text-white outline-none placeholder:text-violet-300/30 focus:border-violet-400/60"
+                              className="w-full rounded-lg border border-[#9333EA]/30 bg-black/40 px-1 py-1.5 text-center text-sm font-semibold text-[#F5F5F7] outline-none placeholder:text-[#F5F5F7]/30 focus:border-[#A855F7]"
                             />
                           </label>
                         ))}
@@ -351,7 +351,7 @@ function TrainingCard({
             <button
               type="button"
               onClick={() => setOpen((o) => !o)}
-              className="mt-5 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition active:scale-[0.98]"
+              className="mt-5 w-full rounded-2xl bg-gradient-to-r from-[#9333EA] to-[#A855F7] py-3 text-sm font-bold text-white shadow-lg shadow-[#F5A623]/30 ring-1 ring-[#F5A623]/60 transition active:scale-[0.98]"
             >
               {open ? "Skrij trening" : "Začni trening"}
             </button>
@@ -380,7 +380,7 @@ function MealCard({
       <div className="flex items-center justify-between">
         <CardLabel>Naslednji obrok</CardLabel>
         {meal?.critical && (
-          <span className="rounded-full bg-rose-500/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-rose-300">
+          <span className="rounded-full bg-[#F5A623]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#FFB800]">
             Kritično
           </span>
         )}
@@ -398,7 +398,7 @@ function MealCard({
               <h2 className="truncate text-base font-bold text-white">
                 {meal.name}
               </h2>
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-violet-300/70">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
                 {meal.slot}
               </p>
             </div>
@@ -411,8 +411,8 @@ function MealCard({
             aria-pressed={done}
             className={`mt-3 w-full rounded-2xl border py-2.5 text-sm font-bold transition active:scale-[0.98] disabled:opacity-50 ${
               done
-                ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-200"
-                : "border-white/15 bg-black/20 text-violet-100/90"
+                ? "border-[#A855F7]/50 bg-[#9333EA]/20 text-white"
+                : "border-[#9333EA]/20 bg-black/30 text-[#F5F5F7]/90"
             }`}
           >
             {done ? "✓ Pojedeno" : "Pojedel"}
@@ -422,9 +422,9 @@ function MealCard({
             {meal.items.map((item, i) => (
               <li
                 key={i}
-                className="flex items-start gap-2 text-sm text-violet-100/90"
+                className="flex items-start gap-2 text-sm text-[#F5F5F7]/90"
               >
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-violet-400" />
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#A855F7]" />
                 <span>{item}</span>
               </li>
             ))}
@@ -455,13 +455,13 @@ function WaterCard({
   const pct = Math.min(100, (waterMl / targetMl) * 100);
 
   const buttonClass =
-    "flex h-10 w-14 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-black/20 text-sm font-bold text-violet-100 transition active:scale-[0.95] disabled:opacity-50";
+    "flex h-10 w-14 shrink-0 items-center justify-center rounded-xl border border-[#9333EA]/30 bg-black/30 text-sm font-bold text-[#F5F5F7] transition active:scale-[0.95] disabled:opacity-50";
 
   return (
     <Card>
       <div className="flex items-center justify-between">
         <CardLabel>Voda</CardLabel>
-        <span className="text-sm font-semibold tabular-nums text-violet-200">
+        <span className="text-sm font-semibold tabular-nums text-[#A855F7]">
           {currentL.toLocaleString("sl-SI", { maximumFractionDigits: 2 })} /{" "}
           {targetL} L
         </span>
@@ -480,7 +480,7 @@ function WaterCard({
 
         <div className="h-3 flex-1 overflow-hidden rounded-full bg-black/30">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-300 transition-all"
+            className="h-full rounded-full bg-gradient-to-r from-[#9333EA] to-[#A855F7] transition-all"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -524,14 +524,14 @@ function HabitsCard({
               aria-pressed={checked}
               className={`flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-sm font-medium transition ${
                 checked
-                  ? "border-violet-400/50 bg-violet-500/20 text-white"
-                  : "border-white/10 bg-black/20 text-violet-100/80"
+                  ? "border-[#A855F7]/50 bg-[#9333EA]/20 text-white"
+                  : "border-[#9333EA]/15 bg-black/30 text-[#F5F5F7]/80"
               }`}
             >
               <span
                 className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
                   checked
-                    ? "border-violet-300 bg-violet-400 text-violet-950"
+                    ? "border-[#A855F7] bg-[#9333EA] text-black"
                     : "border-white/25 bg-transparent"
                 }`}
               >
@@ -556,13 +556,13 @@ function HabitsCard({
       </div>
 
       {/* Prehranska pravila (iz NUTRITION_RULES) kot opomnik */}
-      <ul className="mt-4 flex flex-col gap-1 border-t border-white/10 pt-3">
+      <ul className="mt-4 flex flex-col gap-1 border-t border-[#9333EA]/15 pt-3">
         {NUTRITION_RULES.map((rule, i) => (
           <li
             key={i}
-            className="flex items-start gap-2 text-xs text-violet-300/70"
+            className="flex items-start gap-2 text-xs text-[#F5F5F7]/60"
           >
-            <span className="text-violet-400">•</span>
+            <span className="text-[#A855F7]">•</span>
             <span>{rule}</span>
           </li>
         ))}
@@ -624,7 +624,7 @@ function RemindersCard() {
       ? "bg-emerald-500/20 text-emerald-200"
       : permission === "denied"
         ? "bg-rose-500/20 text-rose-300"
-        : "bg-white/10 text-violet-200/80";
+        : "bg-white/10 text-[#F5F5F7]/80";
 
   return (
     <Card>
@@ -633,13 +633,13 @@ function RemindersCard() {
       {supported === null ? (
         <Placeholder lines={2} />
       ) : !supported ? (
-        <p className="mt-3 text-sm text-violet-200/70">
+        <p className="mt-3 text-sm text-[#F5F5F7]/70">
           Tvoj brskalnik ne podpira opomnikov.
         </p>
       ) : (
         <>
           <div className="mt-3 flex items-center justify-between gap-3">
-            <span className="text-sm text-violet-100/90">Stanje dovoljenja</span>
+            <span className="text-sm text-[#F5F5F7]/90">Stanje dovoljenja</span>
             <span
               className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${statusClass}`}
             >
@@ -648,7 +648,7 @@ function RemindersCard() {
           </div>
 
           {permission === "denied" ? (
-            <p className="mt-3 text-xs text-violet-300/70">
+            <p className="mt-3 text-xs text-[#F5F5F7]/60">
               Opomniki so zavrnjeni. Omogoči jih v nastavitvah brskalnika za to
               stran.
             </p>
@@ -656,7 +656,7 @@ function RemindersCard() {
             <button
               type="button"
               onClick={() => void enable()}
-              className="mt-4 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition active:scale-[0.98]"
+              className="mt-4 w-full rounded-2xl bg-gradient-to-r from-[#9333EA] to-[#A855F7] py-3 text-sm font-bold text-white shadow-lg shadow-[#9333EA]/30 transition active:scale-[0.98]"
             >
               Vklopi opomnike
             </button>
@@ -667,14 +667,14 @@ function RemindersCard() {
               aria-pressed={on}
               className={`mt-4 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-sm font-bold transition active:scale-[0.98] ${
                 on
-                  ? "border-violet-400/50 bg-violet-500/20 text-white"
-                  : "border-white/15 bg-black/20 text-violet-100/80"
+                  ? "border-[#A855F7]/50 bg-[#9333EA]/20 text-white"
+                  : "border-[#9333EA]/20 bg-black/30 text-[#F5F5F7]/80"
               }`}
             >
               <span>{on ? "Opomniki vklopljeni" : "Opomniki izklopljeni"}</span>
               <span
                 className={`relative h-6 w-11 shrink-0 rounded-full transition ${
-                  on ? "bg-violet-400" : "bg-white/20"
+                  on ? "bg-[#9333EA]" : "bg-white/20"
                 }`}
               >
                 <span
@@ -686,7 +686,7 @@ function RemindersCard() {
             </button>
           )}
 
-          <p className="mt-3 text-xs text-violet-300/60">
+          <p className="mt-3 text-xs text-[#F5F5F7]/40">
             Delujejo le, ko je ta zavihek odprt.
           </p>
         </>
