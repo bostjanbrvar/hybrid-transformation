@@ -136,6 +136,47 @@ export async function enableReminders(
   return perm;
 }
 
+/**
+ * TEST (začasno): razporedi eno samo notifikacijo čez `delaySec` sekund po
+ * ISTI nativni poti kot pravi opomniki — za preverjanje delovanja, ko je app
+ * zaprta. Web fallback sproži navaden Notification po timeoutu.
+ */
+export async function scheduleTestNotification(
+  delaySec = 15,
+): Promise<NotificationPermission> {
+  if (isNative()) {
+    const perm = await LocalNotifications.requestPermissions();
+    if (perm.display !== "granted") return "denied";
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: numericId("test"),
+          title: "HYBRID test",
+          body: `Testni opomnik (čez ~${delaySec} s). Deluje ob zaprti app.`,
+          schedule: {
+            at: new Date(Date.now() + delaySec * 1000),
+            allowWhileIdle: true,
+          },
+        },
+      ],
+    });
+    return "granted";
+  }
+  const perm = await requestWebPermission();
+  if (perm === "granted") {
+    setTimeout(() => {
+      try {
+        new Notification("HYBRID test", {
+          body: `Testni opomnik (čez ~${delaySec} s).`,
+        });
+      } catch {
+        // ignoriraj
+      }
+    }, delaySec * 1000);
+  }
+  return perm;
+}
+
 /** Izklop: native prekliče vse pending, web ustavi zanko. */
 export async function disableReminders(): Promise<void> {
   if (isNative()) {
