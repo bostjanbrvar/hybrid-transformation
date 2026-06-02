@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   todaysTraining,
   nextMeal,
@@ -17,7 +17,10 @@ import {
   toggleHabit,
   toggleMeal,
   setWater,
+  setTrainingSet,
+  setMaxWeight,
   type DayLog,
+  type LoggedExercise,
 } from "@/lib/storage";
 
 /* ---------- Pomožno ---------- */
@@ -69,6 +72,20 @@ export default function Home() {
     setLog(toggleMeal(today, mealId));
   }
 
+  function handleMaxWeight(exerciseName: string, weight: number) {
+    if (!today) return;
+    setLog(setMaxWeight(today, exerciseName, weight));
+  }
+
+  function handleSet(
+    exerciseName: string,
+    setIndex: number,
+    value: number | null,
+  ) {
+    if (!today) return;
+    setLog(setTrainingSet(today, exerciseName, setIndex, value));
+  }
+
   return (
     <div className="min-h-full w-full bg-gradient-to-b from-[#1b0d33] via-[#160a2b] to-[#0c0617] text-violet-50">
       <main className="mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pb-16 pt-8">
@@ -83,7 +100,12 @@ export default function Home() {
         </header>
 
         {/* 2. Danes treniraš */}
-        <TrainingCard training={training} />
+        <TrainingCard
+          training={training}
+          logged={log?.training.exercises ?? null}
+          onWeight={handleMaxWeight}
+          onSet={handleSet}
+        />
 
         {/* 3. Naslednji obrok */}
         <MealCard
@@ -141,9 +163,69 @@ function CardLabel({ children }: { children: React.ReactNode }) {
 
 /* ---------- 2. Trening ---------- */
 
-function TrainingCard({ training }: { training: TrainingDay | null }) {
+const SET_COUNT = 4; // S1–S4
+
+function TrainingCard({
+  training,
+  logged,
+  onWeight,
+  onSet,
+}: {
+  training: TrainingDay | null;
+  logged: LoggedExercise[] | null;
+  onWeight: (exerciseName: string, weight: number) => void;
+  onSet: (exerciseName: string, setIndex: number, value: number | null) => void;
+}) {
   const isRecovery = training?.type === "recovery";
   const heading = isRecovery ? "Aktivni počitek" : "Trening";
+
+  const [open, setOpen] = useState(false);
+
+  // Lokalno stanje vnosnih polj (kontrolirani inputi), da tipkanje teče
+  // gladko; ob spremembi tudi takoj zapišemo v localStorage prek onWeight/onSet.
+  const [weights, setWeights] = useState<Record<string, string>>({});
+  const [reps, setReps] = useState<Record<string, string[]>>({});
+  const seeded = useRef(false);
+
+  // Napolni polja iz shranjenega loga – enkrat, ko je log na voljo (po mount-u).
+  useEffect(() => {
+    if (!logged || seeded.current) return;
+    const w: Record<string, string> = {};
+    const r: Record<string, string[]> = {};
+    for (const ex of logged) {
+      w[ex.name] = ex.maxWeight != null ? String(ex.maxWeight) : "";
+      const s = ex.sets ?? [];
+      r[ex.name] = Array.from({ length: SET_COUNT }, (_, i) =>
+        s[i] != null ? String(s[i]) : "",
+      );
+    }
+    setWeights(w);
+    setReps(r);
+    seeded.current = true;
+  }, [logged]);
+
+  function changeWeight(name: string, raw: string) {
+    setWeights((prev) => ({ ...prev, [name]: raw }));
+    const trimmed = raw.trim();
+    if (trimmed === "") return; // praznega ne zapišemo (ohrani prejšnjo težo)
+    const value = Number(trimmed);
+    if (Number.isFinite(value)) onWeight(name, value);
+  }
+
+  function changeSet(name: string, idx: number, raw: string) {
+    setReps((prev) => {
+      const row = prev[name] ?? Array.from({ length: SET_COUNT }, () => "");
+      const next = row.map((v, i) => (i === idx ? raw : v));
+      return { ...prev, [name]: next };
+    });
+    const trimmed = raw.trim();
+    if (trimmed === "") {
+      onSet(name, idx, null); // prazno = null
+      return;
+    }
+    const value = Number(trimmed);
+    if (Number.isFinite(value)) onSet(name, idx, value);
+  }
 
   return (
     <Card>
@@ -161,34 +243,108 @@ function TrainingCard({ training }: { training: TrainingDay | null }) {
           </div>
           <p className="mt-1 text-sm text-violet-200/70">{training.subtitle}</p>
 
-          <ul className="mt-4 flex flex-col gap-2">
-            {training.exercises.map((ex, i) => (
-              <li
-                key={i}
-                className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2.5"
-              >
-                <span className="text-sm font-medium text-violet-50">
+          {/* Recovery dan: samo seznam aktivnosti, brez vnosa serij. */}
+          {isRecovery ? (
+            <ul className="mt-4 flex flex-col gap-2">
+              {training.exercises.map((ex, i) => (
+                <li
+                  key={i}
+                  className="rounded-xl bg-black/20 px-3 py-2.5 text-sm font-medium text-violet-50"
+                >
                   {ex.name}
-                </span>
-                <span className="shrink-0 text-right text-xs text-violet-300/80">
-                  {ex.defaultWeightKg != null && (
-                    <span className="font-semibold text-violet-200">
-                      {ex.defaultWeightKg} kg
-                    </span>
-                  )}
-                  {ex.defaultWeightKg != null && ex.targetReps && " · "}
-                  {ex.targetReps && <span>{ex.targetReps}</span>}
-                </span>
-              </li>
-            ))}
-          </ul>
+                </li>
+              ))}
+            </ul>
+          ) : !open ? (
+            /* Zaprt pregled vaj. */
+            <ul className="mt-4 flex flex-col gap-2">
+              {training.exercises.map((ex, i) => (
+                <li
+                  key={i}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2.5"
+                >
+                  <span className="text-sm font-medium text-violet-50">
+                    {ex.name}
+                  </span>
+                  <span className="shrink-0 text-right text-xs text-violet-300/80">
+                    {ex.defaultWeightKg != null && (
+                      <span className="font-semibold text-violet-200">
+                        {ex.defaultWeightKg} kg
+                      </span>
+                    )}
+                    {ex.defaultWeightKg != null && ex.targetReps && " · "}
+                    {ex.targetReps && <span>{ex.targetReps}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            /* Odprt vnos serij. */
+            <div className="mt-4 flex flex-col gap-3">
+              {training.exercises.map((ex, i) => (
+                <div key={i} className="rounded-2xl bg-black/20 p-3">
+                  <p className="text-sm font-semibold text-violet-50">
+                    {ex.name}
+                  </p>
 
-          <button
-            type="button"
-            className="mt-5 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition active:scale-[0.98]"
-          >
-            Začni trening
-          </button>
+                  {ex.cooldown ? (
+                    <p className="mt-1 text-xs italic text-violet-300/60">
+                      Cool-down
+                    </p>
+                  ) : (
+                    <>
+                      <label className="mt-3 flex items-center justify-between gap-3">
+                        <span className="text-xs font-medium text-violet-200/80">
+                          Max teža (kg)
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.5"
+                          min="0"
+                          value={weights[ex.name] ?? ""}
+                          onChange={(e) => changeWeight(ex.name, e.target.value)}
+                          className="w-24 rounded-lg border border-white/15 bg-black/30 px-2 py-1.5 text-right text-sm font-semibold text-white outline-none focus:border-violet-400/60"
+                        />
+                      </label>
+
+                      <div className="mt-3 grid grid-cols-4 gap-2">
+                        {Array.from({ length: SET_COUNT }, (_, s) => (
+                          <label key={s} className="flex flex-col gap-1">
+                            <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-violet-300/70">
+                              S{s + 1}
+                            </span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min="0"
+                              placeholder="–"
+                              value={reps[ex.name]?.[s] ?? ""}
+                              onChange={(e) =>
+                                changeSet(ex.name, s, e.target.value)
+                              }
+                              className="w-full rounded-lg border border-white/15 bg-black/30 px-1 py-1.5 text-center text-sm font-semibold text-white outline-none placeholder:text-violet-300/30 focus:border-violet-400/60"
+                            />
+                          </label>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Na recovery dan ni vnosa, zato tudi ni gumba. */}
+          {!isRecovery && (
+            <button
+              type="button"
+              onClick={() => setOpen((o) => !o)}
+              className="mt-5 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/40 transition active:scale-[0.98]"
+            >
+              {open ? "Skrij trening" : "Začni trening"}
+            </button>
+          )}
         </>
       )}
     </Card>
