@@ -43,6 +43,27 @@ export const AKTIVNOST_MNOZITELJI: Record<Aktivnost, number> = {
   zelo_aktivno: 1.9,
 };
 
+/* ---------- Cilj: kalorijni faktor + beljakovine ---------- */
+// Standardne vrednosti za makro motor (edini vir resnice za kalkulator):
+//  - kalorijniFaktor: množitelj TDEE glede na cilj
+//      mišična masa = zmeren presežek (+12 %), vzdrževanje = TDEE,
+//      izguba maščobe = zmeren primanjkljaj (−20 %)
+//  - beljakovineGkg: g beljakovin / kg telesne teže (višje v deficitu za
+//      ohranjanje mišic)
+export interface CiljNastavitve {
+  kalorijniFaktor: number;
+  beljakovineGkg: number;
+}
+
+export const CILJ_NASTAVITVE: Record<Cilj, CiljNastavitve> = {
+  misicna_masa: { kalorijniFaktor: 1.12, beljakovineGkg: 2.0 },
+  vzdrzevanje: { kalorijniFaktor: 1.0, beljakovineGkg: 1.8 },
+  izguba_mascobe: { kalorijniFaktor: 0.8, beljakovineGkg: 2.2 },
+};
+
+/** Delež dnevnih kalorij iz maščob (~25–30 %; uporabimo 27 %). */
+export const MASCOBE_DELEZ_KCAL = 0.27;
+
 /* ---------- Slovenske oznake za dropdowne ---------- */
 
 export const AKTIVNOST_OPISI: Record<Aktivnost, string> = {
@@ -118,4 +139,20 @@ export function izracunajStarost(
     leta -= 1;
   }
   return leta < 0 ? 0 : leta;
+}
+
+/** Bazalni metabolizem (Mifflin-St Jeor). */
+export function izracunajBMR(
+  spol: Spol,
+  starost: number,
+  visinaCm: number,
+  tezaKg: number,
+): number {
+  const osnova = 10 * tezaKg + 6.25 * visinaCm - 5 * starost;
+  return spol === "M" ? osnova + 5 : osnova - 161;
+}
+
+/** Skupna dnevna poraba energije = BMR × množitelj aktivnosti. */
+export function izracunajTDEE(bmr: number, aktivnost: Aktivnost): number {
+  return bmr * AKTIVNOST_MNOZITELJI[aktivnost];
 }
