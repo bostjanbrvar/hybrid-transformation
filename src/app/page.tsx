@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import {
   todaysTraining,
   nextMeal,
@@ -98,13 +99,21 @@ export default function Home() {
     <div className="min-h-full w-full bg-black text-[#F5F5F7]">
       <main className="mx-auto flex w-full max-w-[480px] flex-col gap-4 px-4 pb-16 pt-8">
         {/* 1. Glava */}
-        <header className="mb-1 px-1">
+        <header className="mb-1 flex items-start justify-between px-1">
+          <div>
           <h1 className="text-3xl font-black tracking-tight text-white">
             HYBRID
           </h1>
           <p className="mt-1 text-sm font-medium text-[#A855F7]/80">
             {now ? formatToday(now) : " "}
           </p>
+          </div>
+          <Link
+            href="/profil"
+            className="mt-1 rounded-full border border-[#9333EA]/30 px-3 py-1.5 text-xs font-semibold text-[#A855F7] transition hover:border-[#A855F7]/60 hover:text-[#C084FC]"
+          >
+            Profil
+          </Link>
         </header>
 
         {/* 2. Danes treniraš */}
