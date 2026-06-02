@@ -108,12 +108,20 @@ export default function Home() {
             {now ? formatToday(now) : " "}
           </p>
           </div>
-          <Link
-            href="/profil"
-            className="mt-1 rounded-full border border-[#9333EA]/30 px-3 py-1.5 text-xs font-semibold text-[#A855F7] transition hover:border-[#A855F7]/60 hover:text-[#C084FC]"
-          >
-            Profil
-          </Link>
+          <nav className="mt-1 flex items-center gap-2">
+            <Link
+              href="/meritve"
+              className="rounded-full border border-[#9333EA]/30 px-3 py-1.5 text-xs font-semibold text-[#A855F7] transition hover:border-[#A855F7]/60 hover:text-[#C084FC]"
+            >
+              Meritve
+            </Link>
+            <Link
+              href="/profil"
+              className="rounded-full border border-[#9333EA]/30 px-3 py-1.5 text-xs font-semibold text-[#A855F7] transition hover:border-[#A855F7]/60 hover:text-[#C084FC]"
+            >
+              Profil
+            </Link>
+          </nav>
         </header>
 
         {/* 2. Danes treniraš */}
