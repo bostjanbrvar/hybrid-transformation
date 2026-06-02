@@ -7,9 +7,18 @@ import {
   RULES,
   HABITS,
   NUTRITION_RULES,
+  type HabitId,
   type TrainingDay,
   type Meal,
 } from "@/lib/protocol";
+import {
+  getDayLog,
+  todayKey,
+  toggleHabit,
+  toggleMeal,
+  setWater,
+  type DayLog,
+} from "@/lib/storage";
 
 /* ---------- Pomožno ---------- */
 
@@ -28,17 +37,37 @@ function formatToday(date: Date) {
 /* ---------- Stran ---------- */
 
 export default function Home() {
-  // Trening in obrok berejo trenutni čas, zato ju izračunamo šele po
-  // montaži (na klientu) – tako se izognemo neskladju med strežnikom in
-  // brskalnikom (hydration mismatch).
+  // Trening in obrok berejo trenutni čas, log pa localStorage – oboje
+  // izračunamo/naložimo šele po montaži (na klientu), da se izognemo
+  // neskladju med strežnikom in brskalnikom (hydration mismatch).
   const [now, setNow] = useState<Date | null>(null);
+  const [today, setToday] = useState<string | null>(null);
+  const [log, setLog] = useState<DayLog | null>(null);
 
   useEffect(() => {
     setNow(new Date());
+    const key = todayKey();
+    setToday(key);
+    setLog(getDayLog(key));
   }, []);
 
   const training: TrainingDay | null = now ? todaysTraining(now) : null;
   const meal: Meal | null = now ? nextMeal(now) : null;
+
+  function handleToggleHabit(habitId: HabitId) {
+    if (!today) return;
+    setLog(toggleHabit(today, habitId));
+  }
+
+  function handleWater(deltaMl: number) {
+    if (!today || !log) return;
+    setLog(setWater(today, log.waterMl + deltaMl));
+  }
+
+  function handleToggleMeal(mealId: string) {
+    if (!today) return;
+    setLog(toggleMeal(today, mealId));
+  }
 
   return (
     <div className="min-h-full w-full bg-gradient-to-b from-[#1b0d33] via-[#160a2b] to-[#0c0617] text-violet-50">
@@ -57,13 +86,23 @@ export default function Home() {
         <TrainingCard training={training} />
 
         {/* 3. Naslednji obrok */}
-        <MealCard meal={meal} />
+        <MealCard
+          meal={meal}
+          done={meal ? !!log?.mealsDone.includes(meal.id) : false}
+          ready={!!log}
+          onToggle={handleToggleMeal}
+        />
 
         {/* 4. Voda */}
-        <WaterCard targetL={RULES.waterTargetL} />
+        <WaterCard
+          targetL={RULES.waterTargetL}
+          waterMl={log?.waterMl ?? 0}
+          ready={!!log}
+          onChange={handleWater}
+        />
 
         {/* 5. Današnje navade */}
-        <HabitsCard />
+        <HabitsCard habits={log?.habits ?? null} onToggle={handleToggleHabit} />
 
         {/* Mantra (iz RULES) */}
         <p className="mt-2 px-2 text-center text-xs italic text-violet-300/60">
@@ -158,7 +197,17 @@ function TrainingCard({ training }: { training: TrainingDay | null }) {
 
 /* ---------- 3. Obrok ---------- */
 
-function MealCard({ meal }: { meal: Meal | null }) {
+function MealCard({
+  meal,
+  done,
+  ready,
+  onToggle,
+}: {
+  meal: Meal | null;
+  done: boolean;
+  ready: boolean;
+  onToggle: (mealId: string) => void;
+}) {
   return (
     <Card>
       <div className="flex items-center justify-between">
@@ -188,6 +237,20 @@ function MealCard({ meal }: { meal: Meal | null }) {
             </div>
           </div>
 
+          <button
+            type="button"
+            disabled={!ready}
+            onClick={() => onToggle(meal.id)}
+            aria-pressed={done}
+            className={`mt-3 w-full rounded-2xl border py-2.5 text-sm font-bold transition active:scale-[0.98] disabled:opacity-50 ${
+              done
+                ? "border-emerald-400/50 bg-emerald-500/20 text-emerald-200"
+                : "border-white/15 bg-black/20 text-violet-100/90"
+            }`}
+          >
+            {done ? "✓ Pojedeno" : "Pojedel"}
+          </button>
+
           <ul className="mt-4 flex flex-col gap-1.5">
             {meal.items.map((item, i) => (
               <li
@@ -207,23 +270,63 @@ function MealCard({ meal }: { meal: Meal | null }) {
 
 /* ---------- 4. Voda ---------- */
 
-function WaterCard({ targetL }: { targetL: number }) {
-  const current = 0; // brez logike zaenkrat
+const WATER_STEP_ML = 250; // 2,5 dl
+
+function WaterCard({
+  targetL,
+  waterMl,
+  ready,
+  onChange,
+}: {
+  targetL: number;
+  waterMl: number;
+  ready: boolean;
+  onChange: (deltaMl: number) => void;
+}) {
+  const targetMl = targetL * 1000;
+  const currentL = waterMl / 1000;
+  const pct = Math.min(100, (waterMl / targetMl) * 100);
+
+  const buttonClass =
+    "flex h-10 w-14 shrink-0 items-center justify-center rounded-xl border border-white/15 bg-black/20 text-sm font-bold text-violet-100 transition active:scale-[0.95] disabled:opacity-50";
 
   return (
     <Card>
       <div className="flex items-center justify-between">
         <CardLabel>Voda</CardLabel>
         <span className="text-sm font-semibold tabular-nums text-violet-200">
-          {current} / {targetL} L
+          {currentL.toLocaleString("sl-SI", { maximumFractionDigits: 2 })} /{" "}
+          {targetL} L
         </span>
       </div>
 
-      <div className="mt-3 h-3 w-full overflow-hidden rounded-full bg-black/30">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-300 transition-all"
-          style={{ width: `${(current / targetL) * 100}%` }}
-        />
+      <div className="mt-3 flex items-center gap-3">
+        <button
+          type="button"
+          aria-label="Odštej 2,5 dl"
+          disabled={!ready || waterMl <= 0}
+          onClick={() => onChange(-WATER_STEP_ML)}
+          className={buttonClass}
+        >
+          −2,5 dl
+        </button>
+
+        <div className="h-3 flex-1 overflow-hidden rounded-full bg-black/30">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-sky-400 to-cyan-300 transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <button
+          type="button"
+          aria-label="Dodaj 2,5 dl"
+          disabled={!ready}
+          onClick={() => onChange(WATER_STEP_ML)}
+          className={buttonClass}
+        >
+          +2,5 dl
+        </button>
       </div>
     </Card>
   );
@@ -231,25 +334,26 @@ function WaterCard({ targetL }: { targetL: number }) {
 
 /* ---------- 5. Navade ---------- */
 
-function HabitsCard() {
-  // Samo UI – brez shranjevanja zaenkrat.
-  const [done, setDone] = useState<Record<string, boolean>>({});
-
-  const toggle = (id: string) =>
-    setDone((prev) => ({ ...prev, [id]: !prev[id] }));
-
+function HabitsCard({
+  habits,
+  onToggle,
+}: {
+  habits: DayLog["habits"] | null;
+  onToggle: (habitId: HabitId) => void;
+}) {
   return (
     <Card>
       <CardLabel>Današnje navade</CardLabel>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
         {HABITS.map((habit) => {
-          const checked = !!done[habit.id];
+          const checked = !!habits?.[habit.id];
           return (
             <button
               key={habit.id}
               type="button"
-              onClick={() => toggle(habit.id)}
+              disabled={!habits}
+              onClick={() => onToggle(habit.id)}
               aria-pressed={checked}
               className={`flex items-center gap-2.5 rounded-xl border px-3 py-3 text-left text-sm font-medium transition ${
                 checked
