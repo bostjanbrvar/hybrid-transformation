@@ -30,7 +30,6 @@ import {
   isRemindersActive,
   enableReminders,
   disableReminders,
-  scheduleTestNotification,
 } from "@/lib/reminderScheduler";
 
 /* ---------- Pomožno ---------- */
@@ -722,18 +721,6 @@ function RemindersCard() {
             {native
               ? "Delujejo tudi v ozadju (nativni opomniki na napravi)."
               : "Delujejo le, ko je ta zavihek odprt."}
-          </p>
-
-          {/* ZAČASNO: testni opomnik čez 15 s (za preverjanje ob zaprti app). */}
-          <button
-            type="button"
-            onClick={() => void scheduleTestNotification(15)}
-            className="mt-3 w-full rounded-xl border border-[#F5A623]/40 py-2 text-xs font-semibold text-[#FFB800] transition active:scale-[0.98]"
-          >
-            Pošlji testni opomnik (15 s)
-          </button>
-          <p className="mt-1 text-center text-[10px] text-[#F5F5F7]/30">
-            Po pritisku takoj zapri aplikacijo.
           </p>
         </>
       )}
