@@ -9,7 +9,7 @@ import type { LoggedSet } from "@/lib/storage";
 import type { ProgressionHint } from "@/lib/progression";
 import { useRestTimer } from "@/components/RestTimerProvider";
 
-const WEIGHT_STEPS = [1.25, 2.5]; // pari gumbov: male mišice / večje vaje
+const WEIGHT_STEPS = [5, 10]; // pari gumbov: korak 5 kg / 10 kg (Bio Force 5 kg skala)
 
 function round2(n: number) {
   return Math.round(n * 100) / 100;
