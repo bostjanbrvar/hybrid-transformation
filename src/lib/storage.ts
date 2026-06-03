@@ -31,11 +31,20 @@ export type DayType = "training" | "recovery";
 /** Zapis 6 navad iz HABITS (trening, prehrana, voda, spanec, dodatki, fokus). */
 export type Habits = Record<HabitId, boolean>;
 
+/** Ena zabeležena serija: teža × ponovitve. */
+export interface LoggedSet {
+  teza: number;        // kg
+  ponovitve: number;   // št. ponovitev
+}
+
 /** Vaja v dnevnem logu — posnetek vaje iz današnjega TrainingDay. */
 export interface LoggedExercise {
   name: string;
+  /** Serije po vrsti; vsaka nosi svojo težo in ponovitve. */
+  serije?: LoggedSet[];
+  /** @deprecated legacy (HTML app / v1) — bere se le ob migraciji. */
   maxWeight?: number;
-  /** Po setih; null = set obstaja, a brez vnosa ponovitev/teže. */
+  /** @deprecated legacy (HTML app / v1) — array ponovitev; bere se le ob migraciji. */
   sets?: (number | null)[];
 }
 
@@ -89,12 +98,41 @@ export function emptyDayLog(date: string): DayLog {
     training: {
       exercises: day.exercises.map((ex) => ({
         name: ex.name,
-        maxWeight: ex.defaultWeightKg,
-        sets: [],
+        serije: [],
       })),
     },
     waterMl: 0,
   };
+}
+
+/**
+ * Pretvori vajo v nov format (serije[]). Idempotentno:
+ *  - če `serije` že obstaja, vrne kopijo brez sprememb;
+ *  - sicer iz legacy `maxWeight` + `sets` zgradi serije (vsak ne-null set =
+ *    ena serija { teza: maxWeight, ponovitve: set }). Tako se stari treningi
+ *    ohranijo s pravimi podatki, ne kot prazne/ničelne serije.
+ * Defenzivno: neveljavne vrednosti → preskočene, nikoli ne vrže napake.
+ */
+function migrateExercise(ex: LoggedExercise): LoggedExercise {
+  if (Array.isArray(ex.serije)) {
+    return {
+      name: ex.name,
+      serije: ex.serije
+        .filter((s) => s && typeof s === "object")
+        .map((s) => ({
+          teza: Number(s.teza) || 0,
+          ponovitve: Number(s.ponovitve) || 0,
+        })),
+    };
+  }
+  const serije: LoggedSet[] = [];
+  if (Array.isArray(ex.sets)) {
+    for (const reps of ex.sets) {
+      if (reps == null || !Number.isFinite(Number(reps))) continue;
+      serije.push({ teza: Number(ex.maxWeight) || 0, ponovitve: Number(reps) });
+    }
+  }
+  return { name: ex.name, serije };
 }
 
 /**
@@ -113,7 +151,7 @@ function withDefaults(raw: Partial<DayLog> | undefined, date: string): DayLog {
     mealsDone: Array.isArray(raw.mealsDone) ? raw.mealsDone : [],
     training: {
       exercises: Array.isArray(raw.training?.exercises)
-        ? raw.training!.exercises
+        ? raw.training!.exercises.map(migrateExercise)
         : base.training.exercises,
     },
     waterMl: typeof raw.waterMl === "number" ? raw.waterMl : 0,
@@ -147,9 +185,10 @@ function writeAll(all: Record<string, DayLog>): void {
 function findOrCreateExercise(log: DayLog, name: string): LoggedExercise {
   let ex = log.training.exercises.find((e) => e.name === name);
   if (!ex) {
-    ex = { name, sets: [] };
+    ex = { name, serije: [] };
     log.training.exercises.push(ex);
   }
+  if (!Array.isArray(ex.serije)) ex.serije = [];
   return ex;
 }
 
@@ -200,38 +239,45 @@ export function setWater(date: string, ml: number): DayLog {
   return log;
 }
 
-/**
- * Nastavi vrednost posameznega seta (npr. ponovitve ali teža) za vajo.
- * value === null pomeni "set obstaja, brez vnosa". Array se po potrebi
- * razširi z null-i do setIndex.
- */
-export function setTrainingSet(
+/** Zamenja CEL seznam serij za vajo (uporabno za "isto kot zadnjič"). */
+export function setSerije(
   date: string,
   exerciseName: string,
-  setIndex: number,
-  value: number | null,
+  serije: LoggedSet[],
 ): DayLog {
   const log = getDayLog(date);
   const ex = findOrCreateExercise(log, exerciseName);
-  const sets = ex.sets ?? [];
-  while (sets.length <= setIndex) sets.push(null);
-  sets[setIndex] = value;
-  ex.sets = sets;
+  ex.serije = serije.map((s) => ({
+    teza: Math.max(0, Number(s.teza) || 0),
+    ponovitve: Math.max(0, Number(s.ponovitve) || 0),
+  }));
   saveDayLog(log);
   return log;
 }
 
-/** Nastavi maksimalno (delovno) težo za vajo. */
-export function setMaxWeight(
-  date: string,
+/**
+ * Vrne serije iz ZADNJEGA treninga (kadarkoli, ne glede na dan v tednu),
+ * kjer ima vaja s tem imenom vsaj eno zabeleženo serijo. Išče strogo PRED
+ * `beforeDate` (YYYY-MM-DD), od najnovejšega nazaj. Vrne null, če je ni.
+ * Legacy zapisi se prek getDayLog/withDefaults migrirajo, zato so zajeti.
+ */
+export function lastSerijeFor(
   exerciseName: string,
-  weight: number,
-): DayLog {
-  const log = getDayLog(date);
-  const ex = findOrCreateExercise(log, exerciseName);
-  ex.maxWeight = weight;
-  saveDayLog(log);
-  return log;
+  beforeDate: string,
+): LoggedSet[] | null {
+  const all = readAll();
+  const dates = Object.keys(all)
+    .filter((d) => d < beforeDate)
+    .sort()
+    .reverse();
+  for (const d of dates) {
+    const log = withDefaults(all[d], d);
+    const ex = log.training.exercises.find((e) => e.name === exerciseName);
+    if (ex?.serije && ex.serije.length > 0) {
+      return ex.serije.map((s) => ({ ...s }));
+    }
+  }
+  return null;
 }
 
 /** Nastavi jutranjo težo (kg). */

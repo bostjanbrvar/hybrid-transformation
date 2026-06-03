@@ -18,10 +18,11 @@ import {
   toggleHabit,
   toggleMeal,
   setWater,
-  setTrainingSet,
-  setMaxWeight,
+  setSerije,
+  lastSerijeFor,
   type DayLog,
   type LoggedExercise,
+  type LoggedSet,
 } from "@/lib/storage";
 import {
   isNative,
@@ -81,19 +82,6 @@ export default function Home() {
     setLog(toggleMeal(today, mealId));
   }
 
-  function handleMaxWeight(exerciseName: string, weight: number) {
-    if (!today) return;
-    setLog(setMaxWeight(today, exerciseName, weight));
-  }
-
-  function handleSet(
-    exerciseName: string,
-    setIndex: number,
-    value: number | null,
-  ) {
-    if (!today) return;
-    setLog(setTrainingSet(today, exerciseName, setIndex, value));
-  }
 
   return (
     <div className="min-h-full w-full bg-black text-[#F5F5F7]">
@@ -140,8 +128,8 @@ export default function Home() {
         <TrainingCard
           training={training}
           logged={log?.training.exercises ?? null}
-          onWeight={handleMaxWeight}
-          onSet={handleSet}
+          today={today}
+          onChange={setLog}
         />
 
         {/* 3. Naslednji obrok */}
@@ -203,68 +191,63 @@ function CardLabel({ children }: { children: React.ReactNode }) {
 
 /* ---------- 2. Trening ---------- */
 
-const SET_COUNT = 4; // S1–S4
+const WEIGHT_STEPS = [1.25, 2.5]; // pari gumbov: male mišice / večje vaje
+
+function round2(n: number) {
+  return Math.round(n * 100) / 100;
+}
 
 function TrainingCard({
   training,
   logged,
-  onWeight,
-  onSet,
+  today,
+  onChange,
 }: {
   training: TrainingDay | null;
   logged: LoggedExercise[] | null;
-  onWeight: (exerciseName: string, weight: number) => void;
-  onSet: (exerciseName: string, setIndex: number, value: number | null) => void;
+  today: string | null;
+  onChange: (log: DayLog) => void;
 }) {
   const isRecovery = training?.type === "recovery";
   const heading = isRecovery ? "Aktivni počitek" : "Trening";
 
   const [open, setOpen] = useState(false);
 
-  // Lokalno stanje vnosnih polj (kontrolirani inputi), da tipkanje teče
-  // gladko; ob spremembi tudi takoj zapišemo v localStorage prek onWeight/onSet.
-  const [weights, setWeights] = useState<Record<string, string>>({});
-  const [reps, setReps] = useState<Record<string, string[]>>({});
+  // Zabeležene serije po vaji (vir resnice za vnos). Napolnimo enkrat iz
+  // shranjenega loga; vse spremembe gredo skozi commit() → localStorage.
+  const [draft, setDraft] = useState<Record<string, LoggedSet[]>>({});
   const seeded = useRef(false);
 
-  // Napolni polja iz shranjenega loga – enkrat, ko je log na voljo (po mount-u).
+  // Predlogi iz ZADNJEGA treninga te vaje (bled placeholder, dokler ni vnosa).
+  const [suggest, setSuggest] = useState<Record<string, LoggedSet[]>>({});
+
+  // Enkraten seed po mountu: zabeležene serije (draft) + predlogi zadnjega
+  // treninga (suggest). Vse tri vrednosti so na voljo hkrati (parent jih
+  // nastavi v istem effectu), zato seedamo v enem varovanem effectu.
   useEffect(() => {
     if (!logged || seeded.current) return;
-    const w: Record<string, string> = {};
-    const r: Record<string, string[]> = {};
+    const d: Record<string, LoggedSet[]> = {};
     for (const ex of logged) {
-      w[ex.name] = ex.maxWeight != null ? String(ex.maxWeight) : "";
-      const s = ex.sets ?? [];
-      r[ex.name] = Array.from({ length: SET_COUNT }, (_, i) =>
-        s[i] != null ? String(s[i]) : "",
-      );
+      d[ex.name] = (ex.serije ?? []).map((s) => ({ ...s }));
     }
-    setWeights(w);
-    setReps(r);
+    setDraft(d);
+
+    if (training && !isRecovery && today) {
+      const s: Record<string, LoggedSet[]> = {};
+      for (const ex of training.exercises) {
+        if (ex.cooldown) continue;
+        const last = lastSerijeFor(ex.name, today);
+        if (last && last.length) s[ex.name] = last;
+      }
+      setSuggest(s);
+    }
     seeded.current = true;
-  }, [logged]);
+  }, [logged, training, isRecovery, today]);
 
-  function changeWeight(name: string, raw: string) {
-    setWeights((prev) => ({ ...prev, [name]: raw }));
-    const trimmed = raw.trim();
-    if (trimmed === "") return; // praznega ne zapišemo (ohrani prejšnjo težo)
-    const value = Number(trimmed);
-    if (Number.isFinite(value)) onWeight(name, value);
-  }
-
-  function changeSet(name: string, idx: number, raw: string) {
-    setReps((prev) => {
-      const row = prev[name] ?? Array.from({ length: SET_COUNT }, () => "");
-      const next = row.map((v, i) => (i === idx ? raw : v));
-      return { ...prev, [name]: next };
-    });
-    const trimmed = raw.trim();
-    if (trimmed === "") {
-      onSet(name, idx, null); // prazno = null
-      return;
-    }
-    const value = Number(trimmed);
-    if (Number.isFinite(value)) onSet(name, idx, value);
+  // Edina pot pisanja: posodobi lokalni draft + zapiši cel seznam serij.
+  function commit(name: string, serije: LoggedSet[]) {
+    setDraft((prev) => ({ ...prev, [name]: serije }));
+    if (today) onChange(setSerije(today, name, serije));
   }
 
   return (
@@ -322,55 +305,13 @@ function TrainingCard({
             /* Odprt vnos serij. */
             <div className="mt-4 flex flex-col gap-3">
               {training.exercises.map((ex, i) => (
-                <div key={i} className="rounded-2xl bg-black/20 p-3">
-                  <p className="text-sm font-semibold text-[#F5F5F7]">
-                    {ex.name}
-                  </p>
-
-                  {ex.cooldown ? (
-                    <p className="mt-1 text-xs italic text-[#F5F5F7]/40">
-                      Cool-down
-                    </p>
-                  ) : (
-                    <>
-                      <label className="mt-3 flex items-center justify-between gap-3">
-                        <span className="text-xs font-medium text-[#F5F5F7]/70">
-                          Max teža (kg)
-                        </span>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          step="0.5"
-                          min="0"
-                          value={weights[ex.name] ?? ""}
-                          onChange={(e) => changeWeight(ex.name, e.target.value)}
-                          className="w-24 rounded-lg border border-[#9333EA]/30 bg-black/40 px-2 py-1.5 text-right text-sm font-semibold text-[#F5F5F7] outline-none focus:border-[#A855F7]"
-                        />
-                      </label>
-
-                      <div className="mt-3 grid grid-cols-4 gap-2">
-                        {Array.from({ length: SET_COUNT }, (_, s) => (
-                          <label key={s} className="flex flex-col gap-1">
-                            <span className="text-center text-[10px] font-semibold uppercase tracking-wider text-[#A855F7]/70">
-                              S{s + 1}
-                            </span>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min="0"
-                              placeholder="–"
-                              value={reps[ex.name]?.[s] ?? ""}
-                              onChange={(e) =>
-                                changeSet(ex.name, s, e.target.value)
-                              }
-                              className="w-full rounded-lg border border-[#9333EA]/30 bg-black/40 px-1 py-1.5 text-center text-sm font-semibold text-[#F5F5F7] outline-none placeholder:text-[#F5F5F7]/30 focus:border-[#A855F7]"
-                            />
-                          </label>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
+                <ExerciseEditor
+                  key={i}
+                  exercise={ex}
+                  serije={draft[ex.name] ?? []}
+                  suggestion={suggest[ex.name] ?? null}
+                  onCommit={(serije) => commit(ex.name, serije)}
+                />
               ))}
             </div>
           )}
@@ -388,6 +329,208 @@ function TrainingCard({
         </>
       )}
     </Card>
+  );
+}
+
+/* ---------- 2a. Urejevalnik vaje (serije teža × ponovitve) ---------- */
+
+function ExerciseEditor({
+  exercise,
+  serije,
+  suggestion,
+  onCommit,
+}: {
+  exercise: { name: string; defaultWeightKg?: number; targetReps?: string; cooldown?: boolean };
+  serije: LoggedSet[];
+  suggestion: LoggedSet[] | null;
+  onCommit: (serije: LoggedSet[]) => void;
+}) {
+  if (exercise.cooldown) {
+    return (
+      <div className="rounded-2xl bg-black/20 p-3">
+        <p className="text-sm font-semibold text-[#F5F5F7]">{exercise.name}</p>
+        <p className="mt-1 text-xs italic text-[#F5F5F7]/40">Cool-down</p>
+      </div>
+    );
+  }
+
+  const hasRows = serije.length > 0;
+
+  function patch(idx: number, p: Partial<LoggedSet>) {
+    onCommit(serije.map((s, i) => (i === idx ? { ...s, ...p } : s)));
+  }
+  function adjustTeza(idx: number, delta: number) {
+    patch(idx, { teza: Math.max(0, round2(serije[idx].teza + delta)) });
+  }
+  function adjustReps(idx: number, delta: number) {
+    patch(idx, { ponovitve: Math.max(0, serije[idx].ponovitve + delta) });
+  }
+  function addRow() {
+    const last = serije[serije.length - 1];
+    onCommit([...serije, last ? { ...last } : { teza: 0, ponovitve: 0 }]);
+  }
+  function removeRow(idx: number) {
+    onCommit(serije.filter((_, i) => i !== idx));
+  }
+  function useSuggestion() {
+    if (suggestion) onCommit(suggestion.map((s) => ({ ...s })));
+  }
+
+  return (
+    <div className="rounded-2xl bg-black/20 p-3">
+      {/* Glava vaje: ime + cilj (targetReps) + namig privzete teže. */}
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-sm font-semibold text-[#F5F5F7]">{exercise.name}</p>
+        {(exercise.targetReps || exercise.defaultWeightKg != null) && (
+          <span className="shrink-0 text-right text-[11px] text-[#F5F5F7]/55">
+            {exercise.targetReps && (
+              <span className="font-semibold text-[#A855F7]">
+                Cilj: {exercise.targetReps}
+              </span>
+            )}
+            {exercise.targetReps && exercise.defaultWeightKg != null && " · "}
+            {exercise.defaultWeightKg != null && <span>~{exercise.defaultWeightKg} kg</span>}
+          </span>
+        )}
+      </div>
+
+      {/* Predlog iz zadnjega treninga — viden samo dokler ni nobene serije. */}
+      {!hasRows && suggestion && (
+        <div className="mt-3 rounded-xl border border-dashed border-[#9333EA]/30 bg-black/20 p-2.5">
+          <p className="text-[11px] font-medium uppercase tracking-wider text-[#F5F5F7]/40">
+            Zadnjič
+          </p>
+          <p className="mt-1 text-sm text-[#F5F5F7]/45">
+            {suggestion.map((s) => `${s.teza}×${s.ponovitve}`).join("  ·  ")}
+          </p>
+          <button
+            type="button"
+            onClick={useSuggestion}
+            className="mt-2 w-full rounded-xl bg-[#9333EA]/20 py-2.5 text-sm font-bold text-[#A855F7] active:scale-[0.98]"
+          >
+            Isto kot zadnjič
+          </button>
+        </div>
+      )}
+
+      {/* Zabeležene serije. */}
+      {hasRows && (
+        <div className="mt-3 flex flex-col gap-2.5">
+          {serije.map((s, idx) => (
+            <div key={idx} className="rounded-xl bg-black/30 p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#A855F7]/80">
+                  Serija {idx + 1}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removeRow(idx)}
+                  aria-label={`Odstrani serijo ${idx + 1}`}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-[#F5F5F7]/40 active:scale-90"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Teža — pari gumbov 1.25 in 2.5 + direktni vnos. */}
+              <div className="mt-2 flex items-center justify-center gap-1.5">
+                {WEIGHT_STEPS.slice().reverse().map((step) => (
+                  <button
+                    key={`mt-${step}`}
+                    type="button"
+                    onClick={() => adjustTeza(idx, -step)}
+                    className="h-11 min-w-12 rounded-lg bg-[#9333EA]/15 px-2 text-sm font-bold text-[#A855F7] active:scale-95"
+                  >
+                    −{step}
+                  </button>
+                ))}
+                <div className="flex min-w-20 flex-col items-center px-1">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.25"
+                    min="0"
+                    value={String(s.teza)}
+                    onChange={(e) =>
+                      patch(idx, { teza: Math.max(0, Number(e.target.value) || 0) })
+                    }
+                    className="w-20 rounded-lg border border-[#9333EA]/30 bg-black/40 px-1 py-1.5 text-center text-base font-bold text-[#F5F5F7] outline-none focus:border-[#A855F7]"
+                  />
+                  <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-[#F5F5F7]/40">
+                    kg
+                  </span>
+                </div>
+                {WEIGHT_STEPS.map((step) => (
+                  <button
+                    key={`pt-${step}`}
+                    type="button"
+                    onClick={() => adjustTeza(idx, step)}
+                    className="h-11 min-w-12 rounded-lg bg-[#9333EA]/15 px-2 text-sm font-bold text-[#A855F7] active:scale-95"
+                  >
+                    +{step}
+                  </button>
+                ))}
+              </div>
+
+              {/* Ponovitve — −/+ po 1 + direktni vnos. */}
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => adjustReps(idx, -1)}
+                  className="h-11 w-12 rounded-lg bg-white/5 text-lg font-bold text-[#F5F5F7] active:scale-95"
+                >
+                  −
+                </button>
+                <div className="flex min-w-20 flex-col items-center px-1">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={String(s.ponovitve)}
+                    onChange={(e) =>
+                      patch(idx, {
+                        ponovitve: Math.max(0, Math.round(Number(e.target.value) || 0)),
+                      })
+                    }
+                    className="w-20 rounded-lg border border-[#9333EA]/30 bg-black/40 px-1 py-1.5 text-center text-base font-bold text-[#F5F5F7] outline-none focus:border-[#A855F7]"
+                  />
+                  <span className="mt-0.5 text-[10px] font-medium uppercase tracking-wider text-[#F5F5F7]/40">
+                    pon.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => adjustReps(idx, 1)}
+                  className="h-11 w-12 rounded-lg bg-white/5 text-lg font-bold text-[#F5F5F7] active:scale-95"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Dodajanje serije + (opcijsko) prepis s prejšnjim treningom. */}
+      <div className="mt-2.5 flex gap-2">
+        <button
+          type="button"
+          onClick={addRow}
+          className="flex-1 rounded-xl bg-[#9333EA]/15 py-2.5 text-sm font-bold text-[#A855F7] active:scale-[0.98]"
+        >
+          + Dodaj serijo
+        </button>
+        {hasRows && suggestion && (
+          <button
+            type="button"
+            onClick={useSuggestion}
+            className="rounded-xl bg-white/5 px-3 py-2.5 text-xs font-semibold text-[#F5F5F7]/70 active:scale-[0.98]"
+          >
+            Kot zadnjič
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 
