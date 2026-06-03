@@ -35,6 +35,7 @@ export interface Exercise {
   targetReps?: string;      // npr. "12 / 10 / 8 / 8"
   cooldown?: boolean;       // cool-down element (npr. orbitrek)
   progressionStep?: number; // korak dviga teže (kg) ob dosegu cilja; privzeto 1.25
+  bonus?: boolean;          // opcijska dodatna vaja, ločena od glavnih 6
 }
 
 export interface TrainingDay {
@@ -216,6 +217,7 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
       { name: "Razpiranje za prsa (fly)", defaultWeightKg: 25 },
       { name: "Triceps potisk", defaultWeightKg: 25, targetReps: "12 / 10" },
       { name: "Triceps izteg nad glavo", defaultWeightKg: 20, targetReps: "12" },
+      { name: "Potiski na bradlji (dips)", targetReps: "12", progressionStep: 5 },
       { name: "Orbitrek (cool-down)", cooldown: true },
     ],
   },
@@ -231,6 +233,8 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
       { name: "Reverse fly", targetReps: "12", progressionStep: 5 },
       { name: "Biceps curl", targetReps: "12", progressionStep: 5 },
       { name: "Hammer curl", targetReps: "12", progressionStep: 5 },
+      { name: "Neutral grip pull down", targetReps: "12", progressionStep: 5 },
+      { name: "Seated wrist curl", targetReps: "12", progressionStep: 5, bonus: true },
     ],
   },
   SRE: {
@@ -257,6 +261,7 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
       { name: "Hamstring curl", targetReps: "12", progressionStep: 5 },
       { name: "Meča", targetReps: "12", progressionStep: 5 },
       { name: "Trebušne vaje", targetReps: "12", progressionStep: 5 },
+      { name: "Mrtvi dvig z iztegnjenimi nogami", targetReps: "12", progressionStep: 5 },
     ],
   },
   PET: {
@@ -271,6 +276,8 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
       { name: "Rear delt fly", targetReps: "12", progressionStep: 5 },
       { name: "Biceps curl", targetReps: "12", progressionStep: 5 },
       { name: "Triceps pushdown", targetReps: "12", progressionStep: 5 },
+      { name: "Front raise", targetReps: "12", progressionStep: 5 },
+      { name: "Rotator cuff external rotation", targetReps: "12", progressionStep: 5, bonus: true },
     ],
   },
   VIKEND: {
