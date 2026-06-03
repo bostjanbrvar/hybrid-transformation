@@ -7,6 +7,7 @@
 
 import type { LoggedSet } from "@/lib/storage";
 import type { ProgressionHint } from "@/lib/progression";
+import { useRestTimer } from "@/components/RestTimerProvider";
 
 const WEIGHT_STEPS = [1.25, 2.5]; // pari gumbov: male mišice / večje vaje
 
@@ -30,6 +31,8 @@ export function ExerciseEditor({
   /** Če podano: serije so predizpolnjene a še NE shranjene — pokaže "✓ Kot zadnjič". */
   onConfirmUnchanged?: () => void;
 }) {
+  const { start } = useRestTimer();
+
   if (exercise.cooldown) {
     return (
       <div className="rounded-2xl bg-black/20 p-3">
@@ -53,6 +56,8 @@ export function ExerciseEditor({
   function addRow() {
     const last = serije[serije.length - 1];
     onCommit([...serije, last ? { ...last } : { teza: 0, ponovitve: 0 }]);
+    // Nova serija shranjena → sproži počitek timer (60 s). Resetira tekočega.
+    start();
   }
   function removeRow(idx: number) {
     onCommit(serije.filter((_, i) => i !== idx));
