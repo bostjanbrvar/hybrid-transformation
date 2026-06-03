@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { todaysTraining } from "@/lib/protocol";
 import { getCoachMessages, type CoachMsg } from "@/lib/coach";
 
 /* ---------- Pomožno ---------- */
@@ -18,43 +17,24 @@ function formatDan(date: Date) {
   return t.charAt(0).toUpperCase() + t.slice(1);
 }
 
-type CoachView = {
-  forDate: Date;       // dan, za katerega coachamo
-  restToday: boolean;  // je danes počitek (in coachamo jutri)?
-  noTraining: boolean; // ni treninga niti jutri (oba počitek)
-  msgs: CoachMsg[];
-};
-
 /* ---------- Stran ---------- */
 
 export default function CoachPage() {
   // SSR-safe: localStorage beremo šele po montaži (kot ostale strani).
-  const [view, setView] = useState<CoachView | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
+  const [msgs, setMsgs] = useState<CoachMsg[]>([]);
 
   useEffect(() => {
-    const now = new Date();
-    const today = todaysTraining(now);
-
-    if (today.type === "training") {
-      setView({ forDate: now, restToday: false, noTraining: false, msgs: getCoachMessages(now) });
-      return;
-    }
-
-    // Recovery danes → coach za jutri.
-    const jutri = new Date(now);
-    jutri.setDate(jutri.getDate() + 1);
-    const jutriDay = todaysTraining(jutri);
-
-    if (jutriDay.type === "training") {
-      setView({ forDate: jutri, restToday: true, noTraining: false, msgs: getCoachMessages(jutri) });
-    } else {
-      setView({ forDate: jutri, restToday: true, noTraining: true, msgs: [] });
-    }
+    const d = new Date();
+    setNow(d);
+    setMsgs(getCoachMessages(d));
   }, []);
 
-  const increase = view?.msgs.filter((m) => m.kind === "increase") ?? [];
-  const fresh = view?.msgs.filter((m) => m.kind === "new") ?? [];
-  const hold = view?.msgs.filter((m) => m.kind === "hold") ?? [];
+  const increase = msgs.filter((m) => m.kind === "increase");
+  const newOrHold = msgs.filter((m) => m.kind === "new" || m.kind === "hold");
+  const neglected = msgs.filter((m) => m.kind === "neglected");
+  const today = msgs.filter((m) => m.kind === "today");
+  const encourage = msgs.filter((m) => m.kind === "streak" || m.kind === "volume");
 
   return (
     <div className="min-h-full w-full bg-black text-[#F5F5F7]">
@@ -62,10 +42,9 @@ export default function CoachPage() {
         <header className="mb-1 flex items-center justify-between px-1">
           <div>
             <h1 className="text-2xl font-black tracking-tight text-white">Coach</h1>
-            {view && (
+            {now && (
               <p className="mt-0.5 text-sm font-medium text-[#A855F7]/80">
-                {view.restToday ? "Jutri: " : ""}
-                {formatDan(view.forDate)}
+                {formatDan(now)}
               </p>
             )}
           </div>
@@ -77,54 +56,50 @@ export default function CoachPage() {
           </Link>
         </header>
 
-        {!view ? (
+        {!now ? (
           <Skeleton />
-        ) : view.restToday && view.noTraining ? (
-          <Info
-            emoji="😴"
-            title="Počitek"
-            text="Danes in jutri počitek — ni vaj za coachat."
-          />
+        ) : msgs.length === 0 ? (
+          <Info emoji="🤔" title="Ni predlogov" text="Za danes ni sporočil." />
         ) : (
           <>
-            {view.restToday && (
-              <div className="rounded-2xl border border-[#9333EA]/20 bg-[#14101F] px-4 py-3 text-sm text-[#F5F5F7]/70">
-                😴 Danes počitek — spodaj predlogi za jutrišnji trening.
-              </div>
+            {increase.length > 0 && (
+              <Section title="Čas za dvig" accent>
+                {increase.map((m, i) => (
+                  <IncreaseCard key={`inc-${i}`} msg={m} />
+                ))}
+              </Section>
             )}
 
-            {view.msgs.length === 0 ? (
-              <Info
-                emoji="🤔"
-                title="Ni predlogov"
-                text="Za ta dan ni vaj za coachat."
-              />
-            ) : (
-              <>
-                {increase.length > 0 && (
-                  <Section title="Čas za dvig" accent>
-                    {increase.map((m) => (
-                      <IncreaseCard key={m.exerciseName} msg={m} />
-                    ))}
-                  </Section>
-                )}
+            {newOrHold.length > 0 && (
+              <Section title="Vaje">
+                {newOrHold.map((m, i) => (
+                  <MsgCard key={`nh-${i}`} msg={m} muted={m.kind === "hold"} />
+                ))}
+              </Section>
+            )}
 
-                {fresh.length > 0 && (
-                  <Section title="Nove vaje">
-                    {fresh.map((m) => (
-                      <PlainCard key={m.exerciseName} msg={m} />
-                    ))}
-                  </Section>
-                )}
+            {neglected.length > 0 && (
+              <Section title="Zapostavljene skupine">
+                {neglected.map((m, i) => (
+                  <MsgCard key={`neg-${i}`} msg={m} icon="⏳" />
+                ))}
+              </Section>
+            )}
 
-                {hold.length > 0 && (
-                  <Section title="Ostani pri teži" muted>
-                    {hold.map((m) => (
-                      <PlainCard key={m.exerciseName} msg={m} muted />
-                    ))}
-                  </Section>
-                )}
-              </>
+            {today.length > 0 && (
+              <Section title="Danes">
+                {today.map((m, i) => (
+                  <MsgCard key={`tod-${i}`} msg={m} icon="📅" />
+                ))}
+              </Section>
+            )}
+
+            {encourage.length > 0 && (
+              <Section title="Spodbude">
+                {encourage.map((m, i) => (
+                  <MsgCard key={`enc-${i}`} msg={m} icon="🔥" />
+                ))}
+              </Section>
             )}
           </>
         )}
@@ -138,19 +113,17 @@ export default function CoachPage() {
 function Section({
   title,
   accent = false,
-  muted = false,
   children,
 }: {
   title: string;
   accent?: boolean;
-  muted?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <section className="flex flex-col gap-2">
       <h2
         className={`px-1 text-[11px] font-semibold uppercase tracking-widest ${
-          accent ? "text-[#A855F7]" : muted ? "text-[#F5F5F7]/40" : "text-[#A855F7]/80"
+          accent ? "text-[#A855F7]" : "text-[#A855F7]/80"
         }`}
       >
         {title}
@@ -188,15 +161,32 @@ function IncreaseCard({ msg }: { msg: CoachMsg }) {
   );
 }
 
-function PlainCard({ msg, muted = false }: { msg: CoachMsg; muted?: boolean }) {
+function MsgCard({
+  msg,
+  muted = false,
+  icon,
+}: {
+  msg: CoachMsg;
+  muted?: boolean;
+  icon?: string;
+}) {
   return (
     <div
       className={`rounded-2xl border border-[#9333EA]/15 bg-[#14101F] p-4 ${
         muted ? "opacity-80" : ""
       }`}
     >
-      <p className="text-base font-bold text-[#F5F5F7]">{msg.exerciseName}</p>
-      <p className="mt-1.5 text-sm text-[#F5F5F7]/70">{msg.text}</p>
+      {msg.exerciseName && (
+        <p className="text-base font-bold text-[#F5F5F7]">{msg.exerciseName}</p>
+      )}
+      <p
+        className={`flex items-start gap-2 text-sm ${
+          msg.exerciseName ? "mt-1.5 text-[#F5F5F7]/70" : "text-[#F5F5F7]/90"
+        }`}
+      >
+        {icon && <span className="shrink-0">{icon}</span>}
+        <span>{msg.text}</span>
+      </p>
     </div>
   );
 }

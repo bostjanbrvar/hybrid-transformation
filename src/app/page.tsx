@@ -234,9 +234,7 @@ function CoachCard() {
     ready && top
       ? top.kind === "increase" && top.suggestedWeight != null
         ? `${top.exerciseName}: čas za ${top.suggestedWeight} kg`
-        : top.kind === "new"
-          ? `${top.exerciseName}: nova vaja`
-          : `${top.exerciseName}: ostani pri teži`
+        : top.text
       : "Coach";
 
   const isIncrease = ready && top?.kind === "increase";
