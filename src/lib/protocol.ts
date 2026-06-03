@@ -226,11 +226,11 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
     type: "training",
     subtitle: "Fokus na širino hrbta, debelino hrbta in biceps zaključek.",
     exercises: [
-      { name: "Lat pulldown", targetReps: "12", progressionStep: 2.5 },
-      { name: "Veslanje sede", targetReps: "12", progressionStep: 2.5 },
-      { name: "Reverse fly", targetReps: "12", progressionStep: 1.25 },
-      { name: "Biceps curl", targetReps: "12", progressionStep: 1.25 },
-      { name: "Hammer curl", targetReps: "12", progressionStep: 1.25 },
+      { name: "Lat pulldown", targetReps: "12", progressionStep: 5 },
+      { name: "Veslanje sede", targetReps: "12", progressionStep: 5 },
+      { name: "Reverse fly", targetReps: "12", progressionStep: 5 },
+      { name: "Biceps curl", targetReps: "12", progressionStep: 5 },
+      { name: "Hammer curl", targetReps: "12", progressionStep: 5 },
     ],
   },
   SRE: {
@@ -253,10 +253,10 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
     subtitle: "Moč nog, stabilnost in jedro.",
     exercises: [
       { name: "Leg press", targetReps: "12", progressionStep: 5 },
-      { name: "Leg extension", targetReps: "12", progressionStep: 1.25 },
-      { name: "Hamstring curl", targetReps: "12", progressionStep: 1.25 },
-      { name: "Meča", targetReps: "12", progressionStep: 1.25 },
-      { name: "Trebušne vaje", targetReps: "12", progressionStep: 1.25 },
+      { name: "Leg extension", targetReps: "12", progressionStep: 5 },
+      { name: "Hamstring curl", targetReps: "12", progressionStep: 5 },
+      { name: "Meča", targetReps: "12", progressionStep: 5 },
+      { name: "Trebušne vaje", targetReps: "12", progressionStep: 5 },
     ],
   },
   PET: {
@@ -266,11 +266,11 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
     type: "training",
     subtitle: "Ramenski volumen in zaključek za roke.",
     exercises: [
-      { name: "Shoulder press", targetReps: "12", progressionStep: 2.5 },
-      { name: "Lateral raise", targetReps: "12", progressionStep: 1.25 },
-      { name: "Rear delt fly", targetReps: "12", progressionStep: 1.25 },
-      { name: "Biceps curl", targetReps: "12", progressionStep: 1.25 },
-      { name: "Triceps pushdown", targetReps: "12", progressionStep: 1.25 },
+      { name: "Shoulder press", targetReps: "12", progressionStep: 5 },
+      { name: "Lateral raise", targetReps: "12", progressionStep: 5 },
+      { name: "Rear delt fly", targetReps: "12", progressionStep: 5 },
+      { name: "Biceps curl", targetReps: "12", progressionStep: 5 },
+      { name: "Triceps pushdown", targetReps: "12", progressionStep: 5 },
     ],
   },
   VIKEND: {
