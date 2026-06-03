@@ -25,6 +25,7 @@ import {
   type LoggedSet,
 } from "@/lib/storage";
 import { progressionHint, type ProgressionHint } from "@/lib/progression";
+import { getTopCoachMessage, type CoachMsg } from "@/lib/coach";
 import { ExerciseEditor } from "@/components/ExerciseEditor";
 import {
   isNative,
@@ -143,6 +144,9 @@ export default function Home() {
           <span className="text-sm font-semibold text-white/80">Začni →</span>
         </Link>
 
+        {/* Coach (rule-based namig) */}
+        <CoachCard />
+
         {/* 2. Danes treniraš */}
         <TrainingCard
           training={training}
@@ -205,6 +209,51 @@ function CardLabel({ children }: { children: React.ReactNode }) {
     <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
       {children}
     </p>
+  );
+}
+
+/* ---------- Coach kartica (kompaktna) ---------- */
+
+function CoachCard() {
+  // SSR-safe: top sporočilo bere localStorage, zato šele po montaži.
+  const [top, setTop] = useState<CoachMsg | null>(null);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setTop(getTopCoachMessage());
+    setReady(true);
+  }, []);
+
+  const label =
+    ready && top
+      ? top.kind === "increase" && top.suggestedWeight != null
+        ? `${top.exerciseName}: čas za ${top.suggestedWeight} kg`
+        : top.kind === "new"
+          ? `${top.exerciseName}: nova vaja`
+          : `${top.exerciseName}: ostani pri teži`
+      : "Coach";
+
+  const isIncrease = ready && top?.kind === "increase";
+
+  return (
+    <Link
+      href="/coach"
+      className={`flex items-center justify-between gap-3 rounded-2xl border px-4 py-3 transition active:scale-[0.98] ${
+        isIncrease
+          ? "border-[#9333EA]/40 bg-[#9333EA]/10"
+          : "border-[#9333EA]/20 bg-[#14101F]"
+      }`}
+    >
+      <span className="flex min-w-0 items-center gap-2.5">
+        <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-[#A855F7]/80">
+          Coach
+        </span>
+        <span className="truncate text-sm font-semibold text-[#F5F5F7]">
+          {label}
+        </span>
+      </span>
+      <span className="shrink-0 text-sm font-semibold text-[#A855F7]">→</span>
+    </Link>
   );
 }
 
