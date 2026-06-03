@@ -24,6 +24,7 @@ import {
   type LoggedExercise,
   type LoggedSet,
 } from "@/lib/storage";
+import { progressionHint, type ProgressionHint } from "@/lib/progression";
 import {
   isNative,
   isReminderSupported,
@@ -226,10 +227,12 @@ function TrainingCard({
 
   // Predlogi iz ZADNJEGA treninga te vaje (bled placeholder, dokler ni vnosa).
   const [suggest, setSuggest] = useState<Record<string, LoggedSet[]>>({});
+  // Predlogi dviga teže (progression engine) na podlagi zadnje seje.
+  const [hints, setHints] = useState<Record<string, ProgressionHint>>({});
 
-  // Enkraten seed po mountu: zabeležene serije (draft) + predlogi zadnjega
-  // treninga (suggest). Vse tri vrednosti so na voljo hkrati (parent jih
-  // nastavi v istem effectu), zato seedamo v enem varovanem effectu.
+  // Enkraten seed po mountu: zabeležene serije (draft), predlogi zadnjega
+  // treninga (suggest) in predlogi dviga (hints). Vse vrednosti so na voljo
+  // hkrati (parent jih nastavi v istem effectu), zato seedamo v enem effectu.
   useEffect(() => {
     if (!logged || seeded.current) return;
     const d: Record<string, LoggedSet[]> = {};
@@ -240,12 +243,16 @@ function TrainingCard({
 
     if (training && !isRecovery && today) {
       const s: Record<string, LoggedSet[]> = {};
+      const h: Record<string, ProgressionHint> = {};
       for (const ex of training.exercises) {
         if (ex.cooldown) continue;
         const last = lastSerijeFor(ex.name, today);
         if (last && last.length) s[ex.name] = last;
+        const hint = progressionHint(last ?? [], ex.targetReps, ex.progressionStep);
+        if (hint) h[ex.name] = hint;
       }
       setSuggest(s);
+      setHints(h);
     }
     seeded.current = true;
   }, [logged, training, isRecovery, today]);
@@ -316,6 +323,7 @@ function TrainingCard({
                   exercise={ex}
                   serije={draft[ex.name] ?? []}
                   suggestion={suggest[ex.name] ?? null}
+                  hint={hints[ex.name] ?? null}
                   onCommit={(serije) => commit(ex.name, serije)}
                 />
               ))}
@@ -344,11 +352,13 @@ function ExerciseEditor({
   exercise,
   serije,
   suggestion,
+  hint,
   onCommit,
 }: {
   exercise: { name: string; defaultWeightKg?: number; targetReps?: string; cooldown?: boolean };
   serije: LoggedSet[];
   suggestion: LoggedSet[] | null;
+  hint: ProgressionHint | null;
   onCommit: (serije: LoggedSet[]) => void;
 }) {
   if (exercise.cooldown) {
@@ -381,6 +391,10 @@ function ExerciseEditor({
   function useSuggestion() {
     if (suggestion) onCommit(suggestion.map((s) => ({ ...s })));
   }
+  // Progression: en tap → prva serija pri predlagani (višji) teži.
+  function startAtSuggested() {
+    if (hint) onCommit([{ teza: hint.suggestedWeight, ponovitve: 0 }]);
+  }
 
   return (
     <div className="rounded-2xl bg-black/20 p-3">
@@ -399,6 +413,25 @@ function ExerciseEditor({
           </span>
         )}
       </div>
+
+      {/* Progression namig: nevsiljiv predlog dviga teže (ne spreminja samodejno). */}
+      {hint && (
+        <div className="mt-2.5 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-2.5">
+          <p className="text-xs font-semibold text-[#22C55E]">
+            ✅ Cilj dosežen pri vseh serijah ({hint.currentWeight} kg) — predlagam{" "}
+            {hint.suggestedWeight} kg
+          </p>
+          {!hasRows && (
+            <button
+              type="button"
+              onClick={startAtSuggested}
+              className="mt-2 w-full rounded-xl bg-[#22C55E]/15 py-2.5 text-sm font-bold text-[#22C55E] active:scale-[0.98]"
+            >
+              Začni pri {hint.suggestedWeight} kg
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Predlog iz zadnjega treninga — viden samo dokler ni nobene serije. */}
       {!hasRows && suggestion && (

@@ -16,6 +16,7 @@ import {
   allLoggedExerciseNames,
   type ExerciseSession,
 } from "@/lib/storage";
+import { progressionHint } from "@/lib/progression";
 import { TRAINING_DAYS } from "@/lib/protocol";
 
 /* ---------- Konstante / pomožno ---------- */
@@ -33,11 +34,15 @@ type Razpon = 30 | 90 | "vse";
  * in brez cooldown elementov. Statično, zato računamo enkrat ob nalaganju.
  */
 const PROTOCOL_REPS = new Map<string, string | undefined>();
+const PROTOCOL_STEP = new Map<string, number | undefined>();
 for (const day of Object.values(TRAINING_DAYS)) {
   if (day.type !== "training") continue;
   for (const ex of day.exercises) {
     if (ex.cooldown) continue;
-    if (!PROTOCOL_REPS.has(ex.name)) PROTOCOL_REPS.set(ex.name, ex.targetReps);
+    if (!PROTOCOL_REPS.has(ex.name)) {
+      PROTOCOL_REPS.set(ex.name, ex.targetReps);
+      PROTOCOL_STEP.set(ex.name, ex.progressionStep);
+    }
   }
 }
 const PROTOCOL_NAMES = [...PROTOCOL_REPS.keys()];
@@ -201,15 +206,23 @@ function ChipIzbira({
 function Vaja({ ime, razpon }: { ime: string; razpon: Razpon }) {
   const vsa = useMemo(() => exerciseHistory(ime), [ime]);
 
-  const { filtrirane, ciljReps } = useMemo(() => {
+  const { filtrirane, ciljReps, hint } = useMemo(() => {
     const ciljReps = PROTOCOL_REPS.get(ime);
-    if (vsa.length === 0) return { filtrirane: [] as ExerciseSession[], ciljReps };
+    if (vsa.length === 0)
+      return { filtrirane: [] as ExerciseSession[], ciljReps, hint: null };
     const zadnjiMs = isoToMs(vsa[vsa.length - 1].date);
     const mejaMs =
       razpon === "vse" ? -Infinity : zadnjiMs - (razpon - 1) * DAN_MS;
+    // Namig vedno temelji na ZADNJI dejanski seji (ne glede na izbran razpon).
+    const hint = progressionHint(
+      vsa[vsa.length - 1].serije,
+      ciljReps,
+      PROTOCOL_STEP.get(ime),
+    );
     return {
       filtrirane: vsa.filter((s) => isoToMs(s.date) >= mejaMs),
       ciljReps,
+      hint,
     };
   }, [vsa, razpon, ime]);
 
@@ -236,6 +249,12 @@ function Vaja({ ime, razpon }: { ime: string; razpon: Razpon }) {
             {vsa.length} {vsa.length === 1 ? "seja" : "sej"} skupaj
           </span>
         </div>
+        {hint && (
+          <p className="mt-3 rounded-xl border border-[#22C55E]/30 bg-[#22C55E]/10 p-2.5 text-xs font-semibold text-[#22C55E]">
+            ✅ Cilj dosežen pri vseh serijah ({hint.currentWeight} kg) —
+            naslednjič predlagam {hint.suggestedWeight} kg
+          </p>
+        )}
       </section>
 
       {vsa.length === 0 ? (

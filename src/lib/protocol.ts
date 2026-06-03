@@ -34,6 +34,7 @@ export interface Exercise {
   defaultWeightKg?: number; // privzeta izhodiščna teža (uporabnik prepiše)
   targetReps?: string;      // npr. "12 / 10 / 8 / 8"
   cooldown?: boolean;       // cool-down element (npr. orbitrek)
+  progressionStep?: number; // korak dviga teže (kg) ob dosegu cilja; privzeto 1.25
 }
 
 export interface TrainingDay {
