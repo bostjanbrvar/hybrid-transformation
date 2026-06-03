@@ -110,6 +110,12 @@ export default function Home() {
               Analitika
             </Link>
             <Link
+              href="/napredek"
+              className="rounded-full border border-[#9333EA]/30 px-3 py-1.5 text-xs font-semibold text-[#A855F7] transition hover:border-[#A855F7]/60 hover:text-[#C084FC]"
+            >
+              Napredek
+            </Link>
+            <Link
               href="/meritve"
               className="rounded-full border border-[#9333EA]/30 px-3 py-1.5 text-xs font-semibold text-[#A855F7] transition hover:border-[#A855F7]/60 hover:text-[#C084FC]"
             >

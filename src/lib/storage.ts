@@ -280,6 +280,61 @@ export function lastSerijeFor(
   return null;
 }
 
+/* ---------- Zgodovina / napredek po vaji ---------- */
+
+/** Ena seja vaje z izračunanima metrikama (skupni vir za graf + progression). */
+export interface ExerciseSession {
+  date: string;        // YYYY-MM-DD
+  serije: LoggedSet[];
+  maxTeza: number;     // najtežja serija seje (kg)
+  volumen: number;     // Σ (teza × ponovitve) čez vse serije
+}
+
+/** Max teža + skupni volumen za seznam serij. Edini izračun teh metrik. */
+export function sessionMetrics(serije: LoggedSet[]): {
+  maxTeza: number;
+  volumen: number;
+} {
+  let maxTeza = 0;
+  let volumen = 0;
+  for (const s of serije) {
+    if (s.teza > maxTeza) maxTeza = s.teza;
+    volumen += s.teza * s.ponovitve;
+  }
+  return { maxTeza, volumen };
+}
+
+/**
+ * Zgodovina ene vaje skozi vse datume, naraščajoče po datumu. Vključi le
+ * seje z vsaj eno serijo. Legacy zapisi se migrirajo prek withDefaults.
+ */
+export function exerciseHistory(name: string): ExerciseSession[] {
+  const all = readAll();
+  const out: ExerciseSession[] = [];
+  for (const date of Object.keys(all).sort()) {
+    const log = withDefaults(all[date], date);
+    const ex = log.training.exercises.find((e) => e.name === name);
+    if (ex?.serije && ex.serije.length > 0) {
+      const serije = ex.serije.map((s) => ({ ...s }));
+      out.push({ date, serije, ...sessionMetrics(serije) });
+    }
+  }
+  return out;
+}
+
+/** Unikatna imena vseh vaj, ki imajo v zgodovini vsaj eno zabeleženo serijo. */
+export function allLoggedExerciseNames(): string[] {
+  const all = readAll();
+  const names = new Set<string>();
+  for (const date of Object.keys(all)) {
+    const log = withDefaults(all[date], date);
+    for (const ex of log.training.exercises) {
+      if (ex.serije && ex.serije.length > 0) names.add(ex.name);
+    }
+  }
+  return [...names];
+}
+
 /** Nastavi jutranjo težo (kg). */
 export function setWeightMorning(date: string, kg: number): DayLog {
   const log = getDayLog(date);
