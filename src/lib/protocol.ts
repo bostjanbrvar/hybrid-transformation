@@ -252,7 +252,7 @@ export const TRAINING_DAYS: Record<WeekdayKey, TrainingDay> = {
     type: "training",
     subtitle: "Moč nog, stabilnost in jedro.",
     exercises: [
-      { name: "Leg press", targetReps: "12", progressionStep: 2.5 },
+      { name: "Leg press", targetReps: "12", progressionStep: 5 },
       { name: "Leg extension", targetReps: "12", progressionStep: 1.25 },
       { name: "Hamstring curl", targetReps: "12", progressionStep: 1.25 },
       { name: "Meča", targetReps: "12", progressionStep: 1.25 },
