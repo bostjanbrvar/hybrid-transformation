@@ -300,39 +300,102 @@ function TrainingCard({
           ) : !open ? (
             /* Zaprt pregled vaj. */
             <ul className="mt-4 flex flex-col gap-2">
-              {training.exercises.map((ex, i) => (
-                <li
-                  key={i}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2.5"
-                >
-                  <span className="text-sm font-medium text-[#F5F5F7]">
-                    {ex.name}
-                  </span>
-                  <span className="shrink-0 text-right text-xs text-[#F5F5F7]/60">
-                    {ex.defaultWeightKg != null && (
-                      <span className="font-semibold text-[#A855F7]">
-                        {ex.defaultWeightKg} kg
-                      </span>
-                    )}
-                    {ex.defaultWeightKg != null && ex.targetReps && " · "}
-                    {ex.targetReps && <span>{ex.targetReps}</span>}
-                  </span>
+              {training.exercises
+                .filter((ex) => !ex.bonus)
+                .map((ex, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2.5"
+                  >
+                    <span className="text-sm font-medium text-[#F5F5F7]">
+                      {ex.name}
+                    </span>
+                    <span className="shrink-0 text-right text-xs text-[#F5F5F7]/60">
+                      {ex.defaultWeightKg != null && (
+                        <span className="font-semibold text-[#A855F7]">
+                          {ex.defaultWeightKg} kg
+                        </span>
+                      )}
+                      {ex.defaultWeightKg != null && ex.targetReps && " · "}
+                      {ex.targetReps && <span>{ex.targetReps}</span>}
+                    </span>
+                  </li>
+                ))}
+
+              {/* Bonus / opcijske vaje — ločene v pregledu */}
+              {training.exercises.some((ex) => ex.bonus) && (
+                <li className="mt-1 border-t border-[#9333EA]/15 pt-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A855F7]/70">
+                    ✦ Bonus · opcijsko
+                  </p>
                 </li>
-              ))}
+              )}
+              {training.exercises
+                .filter((ex) => ex.bonus)
+                .map((ex, i) => (
+                  <li
+                    key={`bonus-${i}`}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-black/20 px-3 py-2.5"
+                  >
+                    <span className="flex items-center gap-2 text-sm font-medium text-[#F5F5F7]/90">
+                      {ex.name}
+                      <span className="shrink-0 rounded-full bg-[#9333EA]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#A855F7]">
+                        Bonus
+                      </span>
+                    </span>
+                    <span className="shrink-0 text-right text-xs text-[#F5F5F7]/60">
+                      {ex.defaultWeightKg != null && (
+                        <span className="font-semibold text-[#A855F7]">
+                          {ex.defaultWeightKg} kg
+                        </span>
+                      )}
+                      {ex.defaultWeightKg != null && ex.targetReps && " · "}
+                      {ex.targetReps && <span>{ex.targetReps}</span>}
+                    </span>
+                  </li>
+                ))}
             </ul>
           ) : (
             /* Odprt vnos serij. */
             <div className="mt-4 flex flex-col gap-3">
-              {training.exercises.map((ex, i) => (
-                <ExerciseEditor
-                  key={i}
-                  exercise={ex}
-                  serije={draft[ex.name] ?? []}
-                  suggestion={suggest[ex.name] ?? null}
-                  hint={hints[ex.name] ?? null}
-                  onCommit={(serije) => commit(ex.name, serije)}
-                />
-              ))}
+              {training.exercises
+                .filter((ex) => !ex.bonus)
+                .map((ex, i) => (
+                  <ExerciseEditor
+                    key={i}
+                    exercise={ex}
+                    serije={draft[ex.name] ?? []}
+                    suggestion={suggest[ex.name] ?? null}
+                    hint={hints[ex.name] ?? null}
+                    onCommit={(serije) => commit(ex.name, serije)}
+                  />
+                ))}
+
+              {/* Bonus / opcijske vaje — ločene, isti vnos flow */}
+              {training.exercises.some((ex) => ex.bonus) && (
+                <>
+                  <div className="mt-1 border-t border-[#9333EA]/15 pt-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
+                      ✦ Bonus · opcijsko
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#F5F5F7]/45">
+                      Ni del glavnih vaj — dodaj po želji.
+                    </p>
+                  </div>
+                  {training.exercises
+                    .filter((ex) => ex.bonus)
+                    .map((ex, i) => (
+                      <ExerciseEditor
+                        key={`bonus-${i}`}
+                        exercise={ex}
+                        serije={draft[ex.name] ?? []}
+                        suggestion={suggest[ex.name] ?? null}
+                        hint={hints[ex.name] ?? null}
+                        onCommit={(serije) => commit(ex.name, serije)}
+                      />
+                    ))}
+                </>
+              )}
             </div>
           )}
 

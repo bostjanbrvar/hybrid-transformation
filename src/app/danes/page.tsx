@@ -160,20 +160,51 @@ export default function DanesPage() {
 
             {/* Vaje s predizpolnjenimi serijami */}
             <div className="flex flex-col gap-3">
-              {training.exercises.map((ex, i) => (
-                <ExerciseEditor
-                  key={`${ex.name}-${i}`}
-                  exercise={ex}
-                  serije={draft[ex.name] ?? []}
-                  suggestion={null}
-                  hint={hints[ex.name] ?? null}
-                  onCommit={(s) => commit(ex.name, s)}
-                  onConfirmUnchanged={
-                    pending[ex.name] ? () => confirmUnchanged(ex.name) : undefined
-                  }
-                />
-              ))}
+              {training.exercises
+                .filter((ex) => !ex.bonus)
+                .map((ex, i) => (
+                  <ExerciseEditor
+                    key={`${ex.name}-${i}`}
+                    exercise={ex}
+                    serije={draft[ex.name] ?? []}
+                    suggestion={null}
+                    hint={hints[ex.name] ?? null}
+                    onCommit={(s) => commit(ex.name, s)}
+                    onConfirmUnchanged={
+                      pending[ex.name] ? () => confirmUnchanged(ex.name) : undefined
+                    }
+                  />
+                ))}
             </div>
+
+            {/* Bonus / opcijske vaje — ločene od glavnih, isti vnos flow */}
+            {training.exercises.some((ex) => ex.bonus) && (
+              <div className="flex flex-col gap-3">
+                <div className="mt-1 border-t border-[#9333EA]/15 pt-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
+                    ✦ Bonus · opcijsko
+                  </p>
+                  <p className="mt-0.5 text-xs text-[#F5F5F7]/45">
+                    Ni del glavnih vaj — dodaj po želji.
+                  </p>
+                </div>
+                {training.exercises
+                  .filter((ex) => ex.bonus)
+                  .map((ex, i) => (
+                    <ExerciseEditor
+                      key={`bonus-${ex.name}-${i}`}
+                      exercise={ex}
+                      serije={draft[ex.name] ?? []}
+                      suggestion={null}
+                      hint={hints[ex.name] ?? null}
+                      onCommit={(s) => commit(ex.name, s)}
+                      onConfirmUnchanged={
+                        pending[ex.name] ? () => confirmUnchanged(ex.name) : undefined
+                      }
+                    />
+                  ))}
+              </div>
+            )}
           </>
         )}
       </main>

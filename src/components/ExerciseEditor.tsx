@@ -22,7 +22,7 @@ export function ExerciseEditor({
   onCommit,
   onConfirmUnchanged,
 }: {
-  exercise: { name: string; defaultWeightKg?: number; targetReps?: string; cooldown?: boolean };
+  exercise: { name: string; defaultWeightKg?: number; targetReps?: string; cooldown?: boolean; bonus?: boolean };
   serije: LoggedSet[];
   suggestion: LoggedSet[] | null;
   hint: ProgressionHint | null;
@@ -69,7 +69,14 @@ export function ExerciseEditor({
     <div className="rounded-2xl bg-black/20 p-3">
       {/* Glava vaje: ime + cilj (targetReps) + namig privzete teže. */}
       <div className="flex items-start justify-between gap-3">
-        <p className="text-sm font-semibold text-[#F5F5F7]">{exercise.name}</p>
+        <p className="flex items-center gap-2 text-sm font-semibold text-[#F5F5F7]">
+          {exercise.name}
+          {exercise.bonus && (
+            <span className="shrink-0 rounded-full bg-[#9333EA]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#A855F7]">
+              Bonus
+            </span>
+          )}
+        </p>
         {(exercise.targetReps || exercise.defaultWeightKg != null) && (
           <span className="shrink-0 text-right text-[11px] text-[#F5F5F7]/55">
             {exercise.targetReps && (
