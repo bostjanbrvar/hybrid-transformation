@@ -34,6 +34,7 @@ import {
   isRemindersActive,
   enableReminders,
   disableReminders,
+  resumeReminders,
 } from "@/lib/reminderScheduler";
 
 /* ---------- Pomožno ---------- */
@@ -694,7 +695,11 @@ function RemindersCard() {
       setNative(isNative());
       if (sup) {
         setPermission(await getReminderPermission());
-        setOn(await isRemindersActive());
+        // Če je uporabnik opomnike prej vklopil, jih ob zagonu app znova
+        // razporedi za naslednji nastop (drugače native opomniki po prvem dnevu
+        // odmrejo). resumeReminders je no-op, če izbira ni vklopljena.
+        const active = await resumeReminders();
+        setOn(active || (await isRemindersActive()));
       }
     })();
   }, []);

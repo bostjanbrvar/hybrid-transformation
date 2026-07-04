@@ -32,6 +32,32 @@ export function isNative(): boolean {
   return typeof window !== "undefined" && Capacitor.isNativePlatform();
 }
 
+/* ---------- Persistenca uporabnikove izbire ---------- */
+
+// Zapomni si, da je uporabnik VKLOPIL opomnike, da jih lahko ob vsakem zagonu
+// app znova razporedimo (native opomniki so nastavljeni le za naslednji nastop
+// vsakega časa in po prvem dnevu odmrejo, če jih ne re-scheduliramo).
+const ENABLED_KEY = "bostjan_protocol_reminders_enabled_v1";
+
+function readEnabledPref(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(ENABLED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeEnabledPref(enabled: boolean): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (enabled) window.localStorage.setItem(ENABLED_KEY, "1");
+    else window.localStorage.removeItem(ENABLED_KEY);
+  } catch {
+    // tiho ignoriraj (poln prostor / zaseben način)
+  }
+}
+
 /* ---------- Stabilni številčni ID-ji ---------- */
 
 // @capacitor/local-notifications zahteva številčne (Java int) ID-je, ne
@@ -129,18 +155,42 @@ export async function enableReminders(
   now: Date = new Date(),
 ): Promise<NotificationPermission> {
   if (isNative()) {
-    return scheduleNative(now);
+    const perm = await scheduleNative(now);
+    writeEnabledPref(perm === "granted");
+    return perm;
   }
   const perm = await requestWebPermission();
-  if (perm === "granted") startReminders();
+  if (perm === "granted") {
+    startReminders();
+    writeEnabledPref(true);
+  }
   return perm;
 }
 
 /** Izklop: native prekliče vse pending, web ustavi zanko. */
 export async function disableReminders(): Promise<void> {
+  writeEnabledPref(false);
   if (isNative()) {
     await cancelAllNative();
     return;
   }
   stopReminders();
+}
+
+/**
+ * Ob zagonu aplikacije: če je uporabnik opomnike prej vklopil IN je dovoljenje
+ * še vedno odobreno, jih znova razporedi za naslednji nastop vsakega časa.
+ * Idempotentno — enableReminders najprej prekliče obstoječe (native) oz. je
+ * startReminders varen za ponovni klic (web). Sicer no-op.
+ * Vrne true, če so opomniki po klicu aktivni.
+ */
+export async function resumeReminders(
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (!isReminderSupported()) return false;
+  if (!readEnabledPref()) return false;
+  const perm = await getReminderPermission();
+  if (perm !== "granted") return false;
+  await enableReminders(now);
+  return true;
 }
