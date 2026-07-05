@@ -258,64 +258,83 @@ function Vaja({ ime, razpon }: { ime: string; razpon: Razpon }) {
       </section>
 
       {vsa.length === 0 ? (
-        <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-6 text-center shadow-lg shadow-black/40">
-          <p className="text-sm text-[#F5F5F7]/60">
-            Še ni zabeleženih serij za to vajo. Zabeleži trening na začetnem
-            zaslonu.
-          </p>
-        </section>
-      ) : podatki.length === 0 ? (
-        <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-6 text-center shadow-lg shadow-black/40">
-          <p className="text-sm text-[#F5F5F7]/60">
-            V izbranem obdobju ni sej. Izberi širši razpon.
-          </p>
-        </section>
+        <InfoBox>
+          Še ni zabeleženih serij za to vajo. Zabeleži trening na začetnem
+          zaslonu.
+        </InfoBox>
       ) : (
         <>
-          <Graf
-            naslov="Max teža (kg)"
-            data={podatki}
-            dataKey="maxTeza"
-            barva={VIJOLA}
-            enota="kg"
-          />
-          <Graf
-            naslov="Volumen (teža × ponovitve)"
-            data={podatki}
-            dataKey="volumen"
-            barva={VIJOLA_SVETLA}
-            enota=""
-          />
-          <Casovnica seje={filtrirane} />
+          {podatki.length < 2 ? (
+            <InfoBox>Premalo podatkov za graf — beleži naprej.</InfoBox>
+          ) : (
+            <Grafi podatki={podatki} />
+          )}
+          {filtrirane.length > 0 && <Casovnica seje={filtrirane} />}
         </>
       )}
     </>
   );
 }
 
-/* ---------- En graf ---------- */
+/* ---------- Info kartica ---------- */
 
-function Graf({
-  naslov,
-  data,
-  dataKey,
-  barva,
-  enota,
-}: {
-  naslov: string;
-  data: { datum: string; maxTeza: number; volumen: number }[];
-  dataKey: "maxTeza" | "volumen";
-  barva: string;
-  enota: string;
-}) {
+function InfoBox({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-6 text-center shadow-lg shadow-black/40">
+      <p className="text-sm text-[#F5F5F7]/60">{children}</p>
+    </section>
+  );
+}
+
+/* ---------- Graf napredka (preklop: max teža / volumen) ---------- */
+
+type Tocka = { datum: string; maxTeza: number; volumen: number };
+
+function Grafi({ podatki }: { podatki: Tocka[] }) {
+  const [metrika, setMetrika] = useState<"maxTeza" | "volumen">("maxTeza");
+  const jeTeza = metrika === "maxTeza";
+  const barva = jeTeza ? VIJOLA : VIJOLA_SVETLA;
+
+  // Y os pri teži: koraki po 5 kg (Bio Force skala = progressionStep), domena
+  // blizu min (ne od 0), da se krivulja ne splošči. Pri volumnu samodejna os.
+  const { yDomain, yTicks } = useMemo<{
+    yDomain: [number | string, number | string];
+    yTicks: number[] | undefined;
+  }>(() => {
+    if (!jeTeza) return { yDomain: ["auto", "auto"], yTicks: undefined };
+    const vals = podatki.map((p) => p.maxTeza);
+    const lo = Math.min(...vals);
+    const hi = Math.max(...vals);
+    const dMin = Math.max(0, Math.floor(lo / 5) * 5 - 5);
+    const dMax = Math.ceil(hi / 5) * 5 + 5;
+    let step = 5;
+    while ((dMax - dMin) / step > 8) step += 5; // ~≤8 oznak, koraki ostanejo večkratnik 5
+    const t: number[] = [];
+    for (let v = dMin; v <= dMax; v += step) t.push(v);
+    return { yDomain: [dMin, dMax], yTicks: t };
+  }, [podatki, jeTeza]);
+
   return (
     <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-4 shadow-lg shadow-black/40">
-      <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
-        {naslov}
-      </p>
+      <div className="mb-2 flex gap-2">
+        {(["maxTeza", "volumen"] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => setMetrika(m)}
+            className={`flex-1 rounded-xl border py-2 text-xs font-bold transition ${
+              metrika === m
+                ? "border-[#A855F7]/50 bg-[#9333EA]/20 text-white"
+                : "border-[#9333EA]/20 bg-black/30 text-[#F5F5F7]/70"
+            }`}
+          >
+            {m === "maxTeza" ? "Max teža (kg)" : "Volumen"}
+          </button>
+        ))}
+      </div>
       <div className="h-48 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
+          <LineChart data={podatki} margin={{ top: 5, right: 8, left: -16, bottom: 0 }}>
             <CartesianGrid stroke="#ffffff14" vertical={false} />
             <XAxis
               dataKey="datum"
@@ -325,7 +344,8 @@ function Graf({
               minTickGap={24}
             />
             <YAxis
-              domain={["auto", "auto"]}
+              domain={yDomain}
+              ticks={yTicks}
               tick={{ fill: SREBRO, fontSize: 10, opacity: 0.5 }}
               stroke="#ffffff20"
               width={44}
@@ -341,14 +361,14 @@ function Graf({
               }}
               labelFormatter={(l) => fmtPoln(String(l))}
               formatter={(value) => [
-                `${fmt(Number(value), enota === "kg" ? 1 : 0)}${enota ? " " + enota : ""}`,
-                naslov,
+                jeTeza ? `${fmt(Number(value), 1)} kg` : fmt(Number(value), 0),
+                jeTeza ? "Max teža" : "Volumen",
               ]}
             />
             <Line
               type="monotone"
-              dataKey={dataKey}
-              name={naslov}
+              dataKey={metrika}
+              name={jeTeza ? "Max teža" : "Volumen"}
               stroke={barva}
               strokeWidth={2.5}
               dot={{ r: 2, fill: barva }}
