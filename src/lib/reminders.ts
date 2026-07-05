@@ -29,6 +29,7 @@ export interface Reminder {
   title: string;
   body: string;
   kind: ReminderKind;
+  ref?: string; // pri kind === "meal": protocolId obroka (za akcijski gumb)
 }
 
 /* ---------- Ključi ---------- */
@@ -86,6 +87,7 @@ export function buildTodaySchedule(now: Date = new Date()): Reminder[] {
       title: `Čas za ${meal.name}`,
       body: items,
       kind: "meal",
+      ref: meal.id, // protocolId (npr. "m-0340") za akcijski gumb "Pojedel"
     });
   }
 

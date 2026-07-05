@@ -39,6 +39,7 @@ import {
   enableReminders,
   disableReminders,
   resumeReminders,
+  initReminderActions,
 } from "@/lib/reminderScheduler";
 
 /* ---------- Pomožno ---------- */
@@ -817,6 +818,10 @@ function RemindersCard() {
   const [native, setNative] = useState(false);
 
   useEffect(() => {
+    // Registriraj akcijski poslušalca ZGODAJ (native), da hladni zagon iz tapa
+    // na "Pojedel" ujame zadržani dogodek — ne glede na to, ali so opomniki
+    // vklopljeni. Idempotentno + no-op na webu.
+    void initReminderActions();
     void (async () => {
       const sup = isReminderSupported();
       setSupported(sup);

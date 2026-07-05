@@ -13,7 +13,10 @@
 // =============================================================
 
 import { Capacitor } from "@capacitor/core";
-import { LocalNotifications } from "@capacitor/local-notifications";
+import {
+  LocalNotifications,
+  type ActionPerformed,
+} from "@capacitor/local-notifications";
 import {
   buildTodaySchedule,
   isSupported as isWebSupported,
@@ -24,6 +27,7 @@ import {
   isRunning,
   type Reminder,
 } from "@/lib/reminders";
+import { getDayLog, todayKey, toggleMeal } from "@/lib/storage";
 
 /* ---------- Platforma ---------- */
 
@@ -73,6 +77,81 @@ export function numericId(id: string): number {
   return (h >>> 0) % 2_000_000_000;
 }
 
+/* ---------- Akcijski gumbi na obrok-opomnikih ---------- */
+//
+// Obrok-opomnik dobi gumb "Pojedel ✓". Tap označi obrok kot pojeden v
+// localStorage, brez odpiranja UI-ja (kolikor to platforma dopušča).
+//
+// KILLED-APP OBNAŠANJE (Android, @capacitor/local-notifications v8):
+//   Na Androidu so akcijski gumbi VEDNO "foreground" — možnost `foreground`
+//   obstaja le za iOS (glej definitions.d.ts). Zato tap na gumb NE izvede JS
+//   v ozadju, ko je aplikacija ubita: Android namesto tega ZAŽENE aplikacijo
+//   (hladni zagon), Capacitor pa dostavi dogodek `localNotificationActionPerformed`
+//   šele, ko se JS naloži in registrira poslušalca. Dogodek se zadrži
+//   (retainUntilConsumed), dokler ga poslušalec ne prevzame — zato ga hladni
+//   zagon ujame, ČE je poslušalec registriran dovolj zgodaj.
+//
+//   Ker uporabljamo `server.url` (WebView naloži živo Vercel stran), se JS
+//   kontekst ob tapu ustvari na novo, stran se naloži prek mreže, nato se
+//   registrira poslušalec — in zadržani dogodek se sproži. Posledica: obrok se
+//   NE označi "v ozadju pri mrtvi aplikaciji", ampak ob (samodejnem) zagonu, ki
+//   ga sproži tap. To je pričakovana in edina zanesljiva pot na Androidu.
+//
+//   ZATO: initReminderActions() (registracija poslušalca) mora teči ZGODAJ ob
+//   vsakem zagonu — kličemo ga na istem mestu kot resumeReminders (dashboard
+//   mount), da hladni zagon iz opomnika ujame dostavo. Označevanje je
+//   idempotentno (označi le, če še ni), da morebitna dvojna dostava ne škodi.
+//
+//   OPOZORILO: dejansko obnašanje je treba potrditi na napravi po rebuildu APK
+//   (server.url + hladni zagon je odvisen od časovnice nalaganja strani).
+
+/** ID akcijskega tipa; obrok-opomniki ga referencirajo prek actionTypeId. */
+const MEAL_ACTIONS_ID = "MEAL_ACTIONS";
+/** ID akcije znotraj tipa; primerja se z ActionPerformed.actionId. */
+const MEAL_ACTION_POJEDEL = "pojedel";
+
+let actionsInited = false;
+
+/** Handler za tap na akcijski gumb (ali telo) obrok-opomnika. */
+function onNotificationAction(event: ActionPerformed): void {
+  if (event.actionId !== MEAL_ACTION_POJEDEL) return; // "tap" na telo ignoriramo
+  const protocolId = event.notification?.extra?.protocolId;
+  if (typeof protocolId !== "string" || !protocolId) return;
+
+  // Označi za DANES; idempotentno — če je že pojeden, ne odznači (dvojna dostava).
+  const dan = todayKey();
+  const log = getDayLog(dan);
+  if (!log.mealsDone.includes(protocolId)) {
+    toggleMeal(dan, protocolId); // ponovna uporaba obstoječega helperja
+  }
+}
+
+/**
+ * Registrira akcijski tip + poslušalca dogodkov. IDEMPOTENTNO: teče le enkrat
+ * na JS kontekst (actionsInited), zato večkratni klic (enable/resume/mount) ne
+ * podvoji ne tipa ne poslušalca. No-op na webu. Kliči ZGODAJ ob zagonu.
+ */
+export async function initReminderActions(): Promise<void> {
+  if (!isNative() || actionsInited) return;
+  actionsInited = true; // pred await, da preprečimo vzporedno dvojno registracijo
+  try {
+    await LocalNotifications.registerActionTypes({
+      types: [
+        {
+          id: MEAL_ACTIONS_ID,
+          actions: [{ id: MEAL_ACTION_POJEDEL, title: "Pojedel ✓" }],
+        },
+      ],
+    });
+    await LocalNotifications.addListener(
+      "localNotificationActionPerformed",
+      onNotificationAction,
+    );
+  } catch {
+    // Če registracija spodleti, ne blokiraj ostalega (opomniki še delujejo).
+  }
+}
+
 /* ---------- Native pot (local-notifications) ---------- */
 
 /** Pretvori "HH:MM" v naslednji nastop (danes; če je mimo, jutri ob isti uri). */
@@ -104,16 +183,30 @@ async function scheduleNative(now: Date): Promise<NotificationPermission> {
   const perm = await LocalNotifications.requestPermissions();
   if (perm.display !== "granted") return "denied";
 
+  // Poskrbi, da je akcijski tip registriran PRED razporejanjem (idempotentno).
+  await initReminderActions();
   await cancelAllNative();
 
   const urnik: Reminder[] = buildTodaySchedule(now);
   await LocalNotifications.schedule({
-    notifications: urnik.map((r) => ({
-      id: numericId(r.id),
-      title: r.title,
-      body: r.body,
-      schedule: { at: nextAt(now, r.time), allowWhileIdle: true },
-    })),
+    notifications: urnik.map((r) => {
+      const base = {
+        id: numericId(r.id),
+        title: r.title,
+        body: r.body,
+        schedule: { at: nextAt(now, r.time), allowWhileIdle: true },
+      };
+      // Samo obroki dobijo gumb "Pojedel" + protocolId v extra payloadu.
+      // Dodatki/trening/voda ostanejo navadni opomniki.
+      if (r.kind === "meal" && r.ref) {
+        return {
+          ...base,
+          actionTypeId: MEAL_ACTIONS_ID,
+          extra: { protocolId: r.ref },
+        };
+      }
+      return base;
+    }),
   });
 
   return "granted";
