@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   meals,
@@ -10,12 +10,27 @@ import {
   type Ingredient,
   type InfoBlock,
 } from "@/lib/nutrition";
+import { getMakroCilj, type ShranjenMakroCilj } from "@/lib/makro";
+
+/* ---------- Pomožno ---------- */
+
+function fmt0(n: number): string {
+  return Math.round(n).toLocaleString("sl-SI");
+}
 
 /* ---------- Stran ---------- */
 
 export default function PrehranaPage() {
   // En obrok odprt naenkrat (čistejše na mobilu). null = vsi zaprti.
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // SSR-safe: makro cilj beremo šele po montaži (kot ostale strani).
+  const [mounted, setMounted] = useState(false);
+  const [makro, setMakro] = useState<ShranjenMakroCilj | null>(null);
+  useEffect(() => {
+    setMakro(getMakroCilj());
+    setMounted(true);
+  }, []);
 
   return (
     <div className="min-h-full w-full bg-black text-[#F5F5F7]">
@@ -36,6 +51,29 @@ export default function PrehranaPage() {
             ← Nazaj
           </Link>
         </header>
+
+        {/* Dnevni makro cilj (iz kalkulatorja) — ali poziv k izračunu */}
+        {mounted &&
+          (makro ? (
+            <MakroCiljCard cilj={makro} />
+          ) : (
+            <Link
+              href="/kalkulator"
+              className="flex items-center justify-between gap-3 rounded-3xl border border-dashed border-[#9333EA]/30 bg-[#14101F] p-4 shadow-lg shadow-black/40 active:scale-[0.99]"
+            >
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
+                  Dnevni makro cilj
+                </p>
+                <p className="mt-0.5 text-sm text-[#F5F5F7]/70">
+                  Še ni izračunan — nastavi kalorije in makre.
+                </p>
+              </div>
+              <span className="shrink-0 text-sm font-semibold text-[#A855F7]">
+                Kalkulator →
+              </span>
+            </Link>
+          ))}
 
         {/* Obroki */}
         <div className="flex flex-col gap-3">
@@ -91,6 +129,54 @@ export default function PrehranaPage() {
           </ul>
         </section>
       </main>
+    </div>
+  );
+}
+
+/* ---------- Kartica makro cilja ---------- */
+
+function MakroCiljCard({ cilj }: { cilj: ShranjenMakroCilj }) {
+  const r = cilj.rezultat;
+  return (
+    <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-4 shadow-lg shadow-black/40">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
+            Dnevni makro cilj
+          </p>
+          <div className="mt-0.5 flex items-baseline gap-1.5">
+            <span className="text-2xl font-black tabular-nums text-white">
+              {fmt0(r.kalorije)}
+            </span>
+            <span className="text-sm font-semibold text-[#F5F5F7]/50">kcal</span>
+          </div>
+        </div>
+        <Link
+          href="/kalkulator"
+          className="shrink-0 text-xs font-medium text-[#A855F7] transition hover:text-[#C084FC]"
+        >
+          Uredi →
+        </Link>
+      </div>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <MakroPill label="Beljakovine" gramov={r.beljakovine.gramov} />
+        <MakroPill label="Ogljikovi h." gramov={r.ogljikoviHidrati.gramov} />
+        <MakroPill label="Maščobe" gramov={r.mascobe.gramov} />
+      </div>
+    </section>
+  );
+}
+
+function MakroPill({ label, gramov }: { label: string; gramov: number }) {
+  return (
+    <div className="rounded-xl bg-black/20 px-3 py-2 text-center">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-[#A855F7]/70">
+        {label}
+      </p>
+      <p className="mt-0.5 text-base font-black tabular-nums text-white">
+        {fmt0(gramov)}
+        <span className="text-xs font-semibold text-[#F5F5F7]/50"> g</span>
+      </p>
     </div>
   );
 }

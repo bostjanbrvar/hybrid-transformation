@@ -17,6 +17,7 @@ import {
   type LoggedSet,
 } from "@/lib/storage";
 import { progressionHint, type ProgressionHint } from "@/lib/progression";
+import { getMakroCilj, type ShranjenMakroCilj } from "@/lib/makro";
 import { ExerciseEditor } from "@/components/ExerciseEditor";
 
 /* ---------- Pomožno ---------- */
@@ -44,6 +45,7 @@ export default function DanesPage() {
   const [now, setNow] = useState<Date | null>(null);
   const [today, setToday] = useState<string | null>(null);
   const [log, setLog] = useState<DayLog | null>(null);
+  const [makro, setMakro] = useState<ShranjenMakroCilj | null>(null);
 
   // Če je počitek in vseeno treniram → izbrana skupina.
   const [override, setOverride] = useState<WeekdayKey | null>(null);
@@ -59,6 +61,7 @@ export default function DanesPage() {
     const key = todayKey();
     setToday(key);
     setLog(getDayLog(key));
+    setMakro(getMakroCilj());
   }, []);
 
   const baseKey = now ? trainingKeyForDate(now) : null;
@@ -131,6 +134,33 @@ export default function DanesPage() {
             ← Nazaj
           </Link>
         </header>
+
+        {/* Dnevni makro cilj (če je izračunan v kalkulatorju) */}
+        {makro && (
+          <Link
+            href="/prehrana"
+            className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-2xl border border-[#9333EA]/15 bg-[#14101F] px-4 py-2.5 text-xs active:scale-[0.99]"
+          >
+            <span className="font-semibold uppercase tracking-wider text-[#A855F7]/80">
+              Dnevni cilj
+            </span>
+            <span className="tabular-nums text-[#F5F5F7]/85">
+              {makro.rezultat.kalorije.toLocaleString("sl-SI")} kcal
+            </span>
+            <span className="text-[#F5F5F7]/25">·</span>
+            <span className="tabular-nums text-[#F5F5F7]/85">
+              B {makro.rezultat.beljakovine.gramov} g
+            </span>
+            <span className="text-[#F5F5F7]/25">·</span>
+            <span className="tabular-nums text-[#F5F5F7]/85">
+              OH {makro.rezultat.ogljikoviHidrati.gramov} g
+            </span>
+            <span className="text-[#F5F5F7]/25">·</span>
+            <span className="tabular-nums text-[#F5F5F7]/85">
+              M {makro.rezultat.mascobe.gramov} g
+            </span>
+          </Link>
+        )}
 
         {!now || !training ? (
           <Skeleton />

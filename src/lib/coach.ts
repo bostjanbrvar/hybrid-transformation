@@ -26,6 +26,7 @@ import {
   type LoggedSet,
 } from "@/lib/storage";
 import { progressionHint, parseRepCeiling } from "@/lib/progression";
+import { getMakroCilj } from "@/lib/makro";
 
 /** Prag (dni) za "zapostavljeno skupino". Split vrti skupino ~7 dni; 10 ujame
  *  šele dejansko izpuščen cikel (8 bi sprožil že ob enodnevnem zamiku). */
@@ -36,6 +37,7 @@ export type CoachKind =
   | "hold"
   | "new"
   | "neglected"
+  | "makro"
   | "today"
   | "streak"
   | "volume";
@@ -56,6 +58,7 @@ const PRIORITY: Record<CoachKind, number> = {
   new: 2,
   hold: 2,
   neglected: 3,
+  makro: 3,
   today: 4,
   streak: 5,
   volume: 5,
@@ -237,6 +240,24 @@ function neglectedMessages(date: Date): CoachMsg[] {
   return out;
 }
 
+/** Faza 3: makro cilj — na trening dan spomni na beljakovine. Samo če je cilj
+ *  shranjen (iz kalkulatorja); brez cilja ni sporočila. */
+function makroMessages(date: Date): CoachMsg[] {
+  const cilj = getMakroCilj();
+  if (!cilj) return [];
+  if (todaysTraining(date).type !== "training") return [];
+
+  const bel = cilj.rezultat.beljakovine.gramov;
+  const kcal = cilj.rezultat.kalorije;
+  return [
+    {
+      kind: "makro",
+      priority: PRIORITY.makro,
+      text: `Trening dan: zadeni ${bel} g beljakovin (dnevni cilj ${kcal} kcal).`,
+    },
+  ];
+}
+
 /** Faza 2: today-sporočilo z forward-look na počitek dneh (ena pot). */
 function todayMessage(date: Date): CoachMsg {
   const dayKey = trainingKeyForDate(date);
@@ -301,6 +322,7 @@ export function getCoachMessages(date: Date = new Date()): CoachMsg[] {
   const msgs: CoachMsg[] = [
     ...progressionMessages(date),
     ...neglectedMessages(date),
+    ...makroMessages(date),
     todayMessage(date),
     ...encouragementMessages(date),
   ];

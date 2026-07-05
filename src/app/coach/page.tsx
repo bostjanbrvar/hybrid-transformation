@@ -33,6 +33,7 @@ export default function CoachPage() {
   const increase = msgs.filter((m) => m.kind === "increase");
   const newOrHold = msgs.filter((m) => m.kind === "new" || m.kind === "hold");
   const neglected = msgs.filter((m) => m.kind === "neglected");
+  const makro = msgs.filter((m) => m.kind === "makro");
   const today = msgs.filter((m) => m.kind === "today");
   const encourage = msgs.filter((m) => m.kind === "streak" || m.kind === "volume");
 
@@ -82,6 +83,14 @@ export default function CoachPage() {
               <Section title="Zapostavljene skupine">
                 {neglected.map((m, i) => (
                   <MsgCard key={`neg-${i}`} msg={m} icon="⏳" />
+                ))}
+              </Section>
+            )}
+
+            {makro.length > 0 && (
+              <Section title="Prehrana">
+                {makro.map((m, i) => (
+                  <MsgCard key={`mak-${i}`} msg={m} icon="🍗" />
                 ))}
               </Section>
             )}
