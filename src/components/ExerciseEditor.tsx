@@ -159,7 +159,7 @@ export function ExerciseEditor({
                 </button>
               </div>
 
-              {/* Teža — pari gumbov 1.25 in 2.5 + direktni vnos. */}
+              {/* Teža — pari gumbov ±5 / ±10 kg + direktni vnos (korak dviga je per-vaja iz protocol.ts). */}
               <div className="mt-2 flex items-center justify-center gap-1.5">
                 {WEIGHT_STEPS.slice().reverse().map((step) => (
                   <button
@@ -175,7 +175,7 @@ export function ExerciseEditor({
                   <input
                     type="number"
                     inputMode="decimal"
-                    step="0.25"
+                    step="any"
                     min="0"
                     value={String(s.teza)}
                     onChange={(e) =>

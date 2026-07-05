@@ -5,19 +5,16 @@
 // Vse ostalo (Danes zaslon, opomniki, beleženje) bere iz tega objekta.
 // =============================================================
 
+import { meals as NUTRITION_MEALS } from "@/lib/nutrition";
+
 /* ---------- Tipi ---------- */
 
-export type Tag = string;
-
 export interface Meal {
-  id: string;
+  id: string;          // stabilni id (localStorage mealsDone, ROUTINE ref, opomniki)
   time: string;        // "HH:MM"
   slot: string;        // oznaka bloka (npr. "HITRI START")
   name: string;        // npr. "Pre-workout aktivacija"
-  desc: string;        // kratek opis namena
-  items: string[];     // glavne sestavine z gramažami
-  optional?: string[]; // opcijsko / po potrebi
-  tags: Tag[];
+  items: string[];     // glavne sestavine z gramažami (Danes zaslon + opomniki)
   critical?: boolean;  // obrok, ki se ga NE preskoči
 }
 
@@ -87,120 +84,22 @@ export const SUPPLEMENTS: Supplement[] = [
 ];
 
 /* ---------- Prehrana (8 obrokov) ---------- */
+// Enotni vir vsebine obrokov je nutrition.ts (polna vsebina za /prehrana).
+// MEALS je izpeljan pogled za Danes zaslon + opomnike: čas, oznaka bloka,
+// ime, kratek seznam sestavin. Časi in seznam sestavin morajo ostati
+// identični, saj jih beleženje (mealsDone id) in opomniki neposredno berejo.
 
-export const MEALS: Meal[] = [
-  {
-    id: "m-0340",
-    time: "03:40",
-    slot: "HITRI START",
-    name: "Pre-workout aktivacija",
-    desc: "Minimalističen, hiter in učinkovit jutranji pre-workout obrok.",
-    items: [
-      "Banana 120 g",
-      "Whey protein 30 g",
-      "Voda 4–5 dl",
-      "Ščepec soli",
-      "Kreatin 5 g",
-    ],
-    optional: ["Barcaffè kava 1–2 žlički (5–10 g) + 1,5–2 dl vode"],
-    tags: ["takojšnja energija", "več moči na treningu", "fokus kot laser"],
-  },
-  {
-    id: "m-0445",
-    time: "04:45",
-    slot: "PO TRENINGU",
-    name: "Takojšnja regeneracija",
-    desc: "Prvi korak po treningu za obnovo, zaščito mišic in hitro vračanje energije.",
-    items: [
-      "Whey 30 g",
-      "Banana 120 g",
-      "Voda 3–4 dl",
-      "Med 10–15 g",
-      "Ščepec soli",
-    ],
-    optional: ["3–5 navadnih riževih vafljev (30–40 g)"],
-    tags: ["začetek regeneracije", "zaščita in rast mišic", "hitro polnjenje energije"],
-    critical: true,
-  },
-  {
-    id: "m-0730",
-    time: "07:30",
-    slot: "MALICA 1",
-    name: "Stabilna energija",
-    desc: "Popoln prehod iz hitre regeneracije v stabilno energijo za delo in fokus.",
-    items: [
-      "Skuta 200–250 g",
-      "Ovseni kosmiči 60 g",
-      "Sadje 100–150 g",
-      "Med 10 g",
-      "Kokosovo mleko 30–50 ml",
-      "Voda 1–2 dl",
-    ],
-    optional: ["Cimet ali ščepec soli"],
-    tags: ["stabilna energija", "fokus brez padca", "dovolj proteinov"],
-  },
-  {
-    id: "m-1030",
-    time: "10:30",
-    slot: "MALICA 2",
-    name: "Anti-catabolic",
-    desc: "Pametna malica za zaščito mišic, stabilno energijo in fokus brez padca.",
-    items: ["Sadje 150 g", "Oreščki 30 g"],
-    optional: ["Whey protein 30 g (z 200–300 ml vode)"],
-    tags: ["zaščita mišic", "stabilna energija", "fokus brez crash-a"],
-  },
-  {
-    id: "m-1330",
-    time: "13:30",
-    slot: "GLAVNI OBROK",
-    name: "Anabolni fuel",
-    desc: "Glavni obrok dneva za maksimalno energijo, regeneracijo in rast mišic.",
-    items: [
-      "Protein: piščanec/puran 180–200 g · tuna/losos/goveje 150–180 g · ali 4–5 jajc",
-      "OH: riž 80–100 g (surovo) · krompir 200–300 g · testenine/ajda/kruh 80–100 g",
-      "Zelenjava: bučke 100–150 g + korenje 50–100 g + gobe 50–100 g",
-      "Solata + paradižnik 150–250 g",
-      "Olivno olje 10–15 g",
-    ],
-    tags: ["glavni vir energije", "rast mišic", "odlična prebava"],
-  },
-  {
-    id: "m-1515",
-    time: "15:15",
-    slot: "RECOVERY",
-    name: "Po službi (kritično)",
-    desc: "Ključni obrok za prehod iz dela nazaj v energijo, regeneracijo in stabilen večer.",
-    items: ["Jajca 3–4", "Riž 60 g ali kruh 80 g"],
-    optional: ["1 kos sadja (banana ali jabolko) + malo zelenjave"],
-    tags: ["prepreči energy crash", "regeneracija", "mišična podpora"],
-    critical: true,
-  },
-  {
-    id: "m-1830",
-    time: "18:30",
-    slot: "VEČERJA",
-    name: "Stabilizacija",
-    desc: "Umirjen, uravnotežen obrok za stabilno energijo in pripravo na regeneracijo ponoči.",
-    items: [
-      "Protein: tuna/piščanec/puran 150 g · ali 3 cela jajca + 1 beljak",
-      "OH: riž 60–70 g · krompir 180–220 g · kruh 60–70 g",
-      "Zelenjava 200 g (bučke + korenje + gobe) ali solata + paradižnik",
-      "Olivno olje 5–8 g",
-    ],
-    tags: ["stabilna energija do večera", "dodatni protein za mišice", "boljša priprava na noč"],
-  },
-  {
-    id: "m-2100",
-    time: "21:00",
-    slot: "PRED SPANJEM",
-    name: "Nočna regeneracija",
-    desc: "Zadnji obrok dneva za zaščito mišic in regeneracijo čez noč.",
-    items: ["Skuta 200–250 g", "Voda 1–2 dl"],
-    optional: ["Arašidovo maslo 15 g ali oreščki 20 g", "Cimet ali kakav"],
-    tags: ["slow protein", "regeneracija čez noč", "zaščita mišic"],
-    critical: true,
-  },
-];
+/** Obroki, ki se jih NE preskoči — kritičnost za Danes/opomnike (ločena od /prehrana zlatega akcenta). */
+const CRITICAL_MEAL_IDS = new Set(["m-0445", "m-1515", "m-2100"]);
+
+export const MEALS: Meal[] = NUTRITION_MEALS.map((m) => ({
+  id: m.protocolId,
+  time: m.time,
+  slot: m.title,
+  name: m.tagline,
+  items: m.items,
+  critical: CRITICAL_MEAL_IDS.has(m.protocolId),
+}));
 
 /* ---------- Trening (tedenski plan) ---------- */
 

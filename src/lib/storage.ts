@@ -21,9 +21,6 @@ import {
 /** Glavni ključ: zemljevid { [datum]: DayLog }. */
 export const TRACKER_KEY = "bostjan_protocol_tracker_v2";
 
-/** Rezerva za kasneje (makro cilji ipd.). Trenutno neuporabljen. */
-export const MACROS_KEY = "bostjan_protocol_macros_v2";
-
 /* ---------- Podatkovni model ---------- */
 
 export type DayType = "training" | "recovery";

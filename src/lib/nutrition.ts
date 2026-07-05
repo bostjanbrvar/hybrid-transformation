@@ -10,11 +10,13 @@ export interface InfoBlock {
 
 export interface Meal {
   id: string;
+  protocolId: string;  // stabilni id za localStorage (mealsDone), ROUTINE ref in opomnike (npr. "m-0340")
   time: string;        // "HH:MM" — bere ga Capacitor scheduler (KORAK 5)
   title: string;
   tagline: string;
   intro: string;
   formula: string;     // prikazano v zaprti kartici
+  items: string[];     // kratek seznam sestavin za Danes zaslon + opomnike (protocol.ts MEALS)
   optional: string[];
   quickBenefits: string[];
   ingredients: Ingredient[];
@@ -34,12 +36,20 @@ export interface Supplement {
 export const meals: Meal[] = [
   {
     id: "hitri-start",
+    protocolId: "m-0340",
     time: "03:40",
     title: "HITRI START",
     tagline: "Pre-workout aktivacija",
     intro: "Minimalističen, hiter in učinkovit jutranji pre-workout obrok.",
     formula:
       "Banana 120 g + whey 30 g + voda 4–5 dl + ščepec soli + kreatin 5 g · ☕ Barcaffè kava 5–10 g + 1,5–2 dl vode",
+    items: [
+      "Banana 120 g",
+      "Whey protein 30 g",
+      "Voda 4–5 dl",
+      "Ščepec soli",
+      "Kreatin 5 g",
+    ],
     optional: [],
     quickBenefits: ["⚡ takojšnja energija", "💪 več moči na treningu", "🧠 fokus kot laser"],
     ingredients: [
@@ -111,11 +121,19 @@ export const meals: Meal[] = [
   },
   {
     id: "po-treningu",
+    protocolId: "m-0445",
     time: "04:45",
     title: "PO TRENINGU",
     tagline: "Takojšnja regeneracija",
     intro: "Prvi korak po treningu za obnovo, zaščito mišic in hitro vračanje energije.",
     formula: "Whey 30 g + banana 120 g + voda 3–4 dl + med 10–15 g + ščepec soli",
+    items: [
+      "Whey 30 g",
+      "Banana 120 g",
+      "Voda 3–4 dl",
+      "Med 10–15 g",
+      "Ščepec soli",
+    ],
     optional: ["3–5 navadnih riževih vafljev (30–40 g)"],
     quickBenefits: ["🚀 začetek regeneracije", "💪 zaščita in rast mišic", "🔋 hitro polnjenje energije"],
     ingredients: [
@@ -187,12 +205,21 @@ export const meals: Meal[] = [
   },
   {
     id: "malica-1",
+    protocolId: "m-0730",
     time: "07:30",
     title: "MALICA 1",
     tagline: "Stabilna energija",
     intro: "Popoln prehod iz hitre regeneracije v stabilno energijo za delo in fokus.",
     formula:
       "Skuta 200–250 g + ovseni kosmiči 60 g + sadje 100–150 g + med 10 g + kokosovo mleko 30–50 ml + voda 1–2 dl",
+    items: [
+      "Skuta 200–250 g",
+      "Ovseni kosmiči 60 g",
+      "Sadje 100–150 g",
+      "Med 10 g",
+      "Kokosovo mleko 30–50 ml",
+      "Voda 1–2 dl",
+    ],
     optional: ["cimet ali ščepec soli"],
     quickBenefits: ["🔋 stabilna energija", "🧠 fokus brez padca", "💪 dovolj proteinov"],
     ingredients: [
@@ -271,11 +298,13 @@ export const meals: Meal[] = [
   },
   {
     id: "malica-2",
+    protocolId: "m-1030",
     time: "10:30",
     title: "MALICA 2",
     tagline: "Anti-catabolic",
     intro: "Pametna malica za zaščito mišic, stabilno energijo in fokus brez padca.",
     formula: "Sadje 150 g + oreščki 30 g",
+    items: ["Sadje 150 g", "Oreščki 30 g"],
     optional: ["whey protein 30 g (z 200–300 ml vode) — po potrebi"],
     quickBenefits: ["🛡️ zaščita mišic", "⚖️ stabilna energija", "🧠 fokus brez crash-a"],
     ingredients: [
@@ -330,12 +359,20 @@ export const meals: Meal[] = [
   },
   {
     id: "glavni-obrok",
+    protocolId: "m-1330",
     time: "13:30",
     title: "GLAVNI OBROK",
     tagline: "Anabolni fuel",
     intro: "Glavni obrok dneva za maksimalno energijo, regeneracijo in rast mišic.",
     formula:
       "Protein: piščanec/puran 180–200 g · tuna 150–180 g · pusto mleto goveje 150–180 g · losos 150–180 g · jajca 4–5 | OH: riž 80–100 g (surovo) ali krompir 200–300 g ali testenine/ajda/kruh 80–100 g | Zelenjava: bučke 100–150 g + korenje 50–100 g + gobe 50–100 g | Solata + paradižnik 150–250 g | Olivno olje 10–15 g",
+    items: [
+      "Protein: piščanec/puran 180–200 g · tuna/losos/goveje 150–180 g · ali 4–5 jajc",
+      "OH: riž 80–100 g (surovo) · krompir 200–300 g · testenine/ajda/kruh 80–100 g",
+      "Zelenjava: bučke 100–150 g + korenje 50–100 g + gobe 50–100 g",
+      "Solata + paradižnik 150–250 g",
+      "Olivno olje 10–15 g",
+    ],
     optional: [],
     quickBenefits: ["🔥 glavni vir energije", "🧬 rast mišic", "🥗 odlična prebava"],
     ingredients: [
@@ -407,11 +444,13 @@ export const meals: Meal[] = [
   },
   {
     id: "recovery",
+    protocolId: "m-1515",
     time: "15:15",
     title: "RECOVERY",
     tagline: "Po službi (kritično)",
     intro: "Ključni obrok za prehod iz dela nazaj v energijo, regeneracijo in stabilen večer.",
     formula: "Jajca 3–4 + riž 60 g ali kruh 80 g",
+    items: ["Jajca 3–4", "Riž 60 g ali kruh 80 g"],
     optional: ["1 kos sadja (banana ali jabolko)", "malo zelenjave"],
     quickBenefits: ["⚠️ prepreči energy crash", "🔄 regeneracija", "💪 mišična podpora"],
     ingredients: [
@@ -475,12 +514,19 @@ export const meals: Meal[] = [
   },
   {
     id: "vecerja",
+    protocolId: "m-1830",
     time: "18:30",
     title: "VEČERJA",
     tagline: "Stabilizacija",
     intro: "Umirjen, uravnotežen obrok za stabilno energijo in pripravo na regeneracijo ponoči.",
     formula:
       "Protein: tuna/piščanec/puran 150 g ali 3 cela jajca + 1 beljak | OH: riž 60–70 g ali krompir 180–220 g ali kruh 60–70 g | Zelenjava 200 g (bučke + korenje + gobe) ali solata + paradižnik | Olivno olje 5–8 g",
+    items: [
+      "Protein: tuna/piščanec/puran 150 g · ali 3 cela jajca + 1 beljak",
+      "OH: riž 60–70 g · krompir 180–220 g · kruh 60–70 g",
+      "Zelenjava 200 g (bučke + korenje + gobe) ali solata + paradižnik",
+      "Olivno olje 5–8 g",
+    ],
     optional: [],
     quickBenefits: ["⚡ stabilna energija do večera", "💪 dodatni protein za mišice", "😴 boljša priprava na noč"],
     ingredients: [
@@ -543,11 +589,13 @@ export const meals: Meal[] = [
   },
   {
     id: "pred-spanjem",
+    protocolId: "m-2100",
     time: "21:00",
     title: "PRED SPANJEM",
     tagline: "Nočna regeneracija",
     intro: "Zadnji obrok dneva za zaščito mišic in regeneracijo čez noč.",
     formula: "Skuta 200–250 g + voda 1–2 dl",
+    items: ["Skuta 200–250 g", "Voda 1–2 dl"],
     optional: ["arašidovo maslo 15 g ali oreščki 20 g", "cimet ali kakav (opcijsko)"],
     quickBenefits: ["🌙 slow protein", "🔄 regeneracija čez noč", "💪 zaščita mišic"],
     ingredients: [
