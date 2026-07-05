@@ -18,6 +18,7 @@ import {
 } from "@/lib/storage";
 import { progressionHint } from "@/lib/progression";
 import { TRAINING_DAYS } from "@/lib/protocol";
+import { habitHeatmap, type HeatCelica } from "@/lib/teden";
 
 /* ---------- Konstante / pomožno ---------- */
 
@@ -117,6 +118,9 @@ export default function NapredekPage() {
           </Link>
         </header>
 
+        {/* 12-tedenski heatmap navad (nad izbiro vaje) */}
+        <HeatmapNavad />
+
         {imena === null ? (
           <Skeleton />
         ) : imena.length === 0 ? (
@@ -166,6 +170,90 @@ function Prazno() {
   return (
     <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-6 text-center shadow-lg shadow-black/40">
       <p className="text-sm text-[#F5F5F7]/70">Ni vaj za prikaz.</p>
+    </section>
+  );
+}
+
+/* ---------- Heatmap navad (12 tednov) ---------- */
+
+const mesecFmt = new Intl.DateTimeFormat("sl-SI", { month: "short" });
+
+// Barvni razred celice (samo vijolična skala; 0 = skoraj črna).
+function heatBarva(c: HeatCelica): string {
+  if (c.prihodnost) return "bg-transparent";
+  const ozadje =
+    c.level === 0
+      ? "bg-[#9333EA]/10"
+      : c.level === 1
+        ? "bg-[#9333EA]/30"
+        : c.level === 2
+          ? "bg-[#9333EA]/60"
+          : "bg-[#9333EA]";
+  return c.jeDanes ? `${ozadje} ring-[1.5px] ring-[#F5F5F7]/80` : ozadje;
+}
+
+function HeatmapNavad() {
+  // SSR-safe: mrežo beremo šele po montaži.
+  const [mreza, setMreza] = useState<HeatCelica[][] | null>(null);
+
+  useEffect(() => {
+    setMreza(habitHeatmap());
+  }, []);
+
+  if (!mreza) {
+    return <div className="h-36 animate-pulse rounded-3xl bg-white/5" />;
+  }
+
+  // Oznaka meseca nad stolpcem le ob menjavi meseca (redko → brez gneče).
+  const oznake = mreza.map((teden, i) => {
+    const mesec = mesecFmt.format(new Date(isoToMs(teden[0].datum)));
+    const prej =
+      i > 0 ? mesecFmt.format(new Date(isoToMs(mreza[i - 1][0].datum))) : null;
+    return mesec !== prej ? mesec : "";
+  });
+
+  return (
+    <section className="rounded-3xl border border-[#9333EA]/20 bg-[#14101F] p-4 shadow-lg shadow-black/40">
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
+        Navade · 12 tednov
+      </p>
+
+      {/* Oznake mesecev (poravnane s stolpci) */}
+      <div className="flex gap-[3px]">
+        {oznake.map((m, i) => (
+          <span
+            key={i}
+            className="flex-1 text-center text-[8px] leading-none text-[#F5F5F7]/40"
+          >
+            {m}
+          </span>
+        ))}
+      </div>
+
+      {/* Mreža: stolpci = tedni, vrstice = pon→ned */}
+      <div className="mt-1 flex gap-[3px]">
+        {mreza.map((teden, i) => (
+          <div key={i} className="flex flex-1 flex-col gap-[3px]">
+            {teden.map((c) => (
+              <div
+                key={c.datum}
+                title={c.prihodnost ? c.datum : `${c.datum}: ${c.count}/6 navad`}
+                className={`aspect-square rounded-[2px] ${heatBarva(c)}`}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+
+      {/* Legenda */}
+      <div className="mt-3 flex items-center justify-end gap-1.5 text-[10px] text-[#F5F5F7]/50">
+        <span>manj</span>
+        <span className="h-2.5 w-2.5 rounded-[2px] bg-[#9333EA]/10" />
+        <span className="h-2.5 w-2.5 rounded-[2px] bg-[#9333EA]/30" />
+        <span className="h-2.5 w-2.5 rounded-[2px] bg-[#9333EA]/60" />
+        <span className="h-2.5 w-2.5 rounded-[2px] bg-[#9333EA]" />
+        <span>več</span>
+      </div>
     </section>
   );
 }

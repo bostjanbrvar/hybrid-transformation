@@ -108,3 +108,73 @@ export function tedenskiPregled(now: Date = new Date()): TedenskiPregled {
   }
   return agregirajTeden(days);
 }
+
+/* ---------- Heatmap navad (12 tednov, GitHub stil) ---------- */
+
+const HEAT_TEDNI = 12; // stolpcev (tednov), poravnano na ponedeljek
+
+export interface HeatCelica {
+  datum: string;          // "YYYY-MM-DD"
+  count: number;          // označene navade tega dne (0..6)
+  level: 0 | 1 | 2 | 3;   // barvni razred: 0 / 1–2 / 3–4 / 5–6
+  jeDanes: boolean;
+  prihodnost: boolean;    // datum po danes (prazna celica v zadnjem stolpcu)
+}
+
+/** Razred (0..3) glede na št. označenih navad. Dokumentirani pragovi. */
+function heatLevel(count: number): 0 | 1 | 2 | 3 {
+  if (count <= 0) return 0; // 0
+  if (count <= 2) return 1; // 1–2
+  if (count <= 4) return 2; // 3–4
+  return 3; // 5–6
+}
+
+/**
+ * Čista tvorba mreže: 12 stolpcev (tednov) × 7 vrstic (pon→ned), poravnano na
+ * ponedeljek tekočega tedna nazaj. `count(datum)` vrne št. navad za dan (0 če
+ * ni podatka). Zadnji stolpec ima lahko prihodnje (prazne) celice. Testabilno.
+ */
+export function heatmapMreza(
+  now: Date,
+  count: (datum: string) => number,
+): HeatCelica[][] {
+  const danesKey = toDateKey(now);
+  // ponedeljek tekočega tedna
+  const pon = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  pon.setDate(pon.getDate() - ((pon.getDay() + 6) % 7));
+  // začetek mreže: 11 tednov pred tem ponedeljkom
+  const start = new Date(
+    pon.getFullYear(),
+    pon.getMonth(),
+    pon.getDate() - (HEAT_TEDNI - 1) * 7,
+  );
+
+  const tedni: HeatCelica[][] = [];
+  for (let c = 0; c < HEAT_TEDNI; c++) {
+    const teden: HeatCelica[] = [];
+    for (let r = 0; r < 7; r++) {
+      const d = new Date(
+        start.getFullYear(),
+        start.getMonth(),
+        start.getDate() + c * 7 + r,
+      );
+      const datum = toDateKey(d);
+      const prihodnost = datum > danesKey;
+      const n = prihodnost ? 0 : count(datum);
+      teden.push({
+        datum,
+        count: n,
+        level: heatLevel(n),
+        jeDanes: datum === danesKey,
+        prihodnost,
+      });
+    }
+    tedni.push(teden);
+  }
+  return tedni;
+}
+
+/** Heatmap iz localStorage (zadnjih 12 tednov navad). SSR-safe prek getDayLog. */
+export function habitHeatmap(now: Date = new Date()): HeatCelica[][] {
+  return heatmapMreza(now, (datum) => steviloNavad(getDayLog(datum)));
+}
