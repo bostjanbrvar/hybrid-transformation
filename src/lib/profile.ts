@@ -31,7 +31,7 @@ export interface Profile {
 
 /* ---------- Ključ ---------- */
 
-const PROFILE_KEY = "bostjan_protocol_profile_v1";
+export const PROFILE_KEY = "bostjan_protocol_profile_v1";
 
 /* ---------- Mifflin-St Jeor množitelji aktivnosti ---------- */
 // Standardni PAL faktorji — kalkulator (TDEE) jih kasneje samo uporabi.

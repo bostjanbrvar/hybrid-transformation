@@ -15,6 +15,7 @@ import {
   type Aktivnost,
   type Cilj,
 } from "@/lib/profile";
+import { BackupSection } from "@/components/BackupSection";
 
 /* ---------- Skupni razredi (HYBRID temni stil) ---------- */
 
@@ -192,6 +193,9 @@ export default function ProfilPage() {
         <p className="px-2 text-center text-xs text-[#F5F5F7]/40">
           Teža ni del profila — beleži se dnevno.
         </p>
+
+        {/* Varnostna kopija (izvoz/uvoz vseh podatkov) */}
+        <BackupSection />
       </main>
     </div>
   );

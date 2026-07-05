@@ -34,7 +34,7 @@ export interface Reminder {
 /* ---------- Ključi ---------- */
 
 /** Sproženi opomniki po datumu: { "YYYY-MM-DD": ["meal-m-0340", ...] }. */
-const FIRED_KEY = "bostjan_protocol_reminders_fired_v2";
+export const FIRED_KEY = "bostjan_protocol_reminders_fired_v2";
 
 /* ---------- Čas: pomočniki ---------- */
 

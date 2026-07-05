@@ -37,7 +37,7 @@ export function isNative(): boolean {
 // Zapomni si, da je uporabnik VKLOPIL opomnike, da jih lahko ob vsakem zagonu
 // app znova razporedimo (native opomniki so nastavljeni le za naslednji nastop
 // vsakega časa in po prvem dnevu odmrejo, če jih ne re-scheduliramo).
-const ENABLED_KEY = "bostjan_protocol_reminders_enabled_v1";
+export const ENABLED_KEY = "bostjan_protocol_reminders_enabled_v1";
 
 function readEnabledPref(): boolean {
   if (typeof window === "undefined") return false;

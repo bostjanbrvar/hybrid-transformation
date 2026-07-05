@@ -78,7 +78,7 @@ export function izracunajMakre(profile: Profile, tezaKg: number): MakroRezultat 
 
 /* ---------- Shranjen cilj (za AI / rule-based coach) ---------- */
 
-const MAKRO_CILJ_KEY = "bostjan_protocol_makro_cilj_v1";
+export const MAKRO_CILJ_KEY = "bostjan_protocol_makro_cilj_v1";
 
 export interface ShranjenMakroCilj {
   posodobljeno: string; // ISO datum/čas

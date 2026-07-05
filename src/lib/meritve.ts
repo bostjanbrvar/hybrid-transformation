@@ -28,7 +28,7 @@ export type MeritevPolje = "tezaKg" | "pasCm" | "bicepsCm" | "kvadricepsCm";
 
 /* ---------- Ključ ---------- */
 
-const MERITVE_KEY = "bostjan_protocol_meritve_v1";
+export const MERITVE_KEY = "bostjan_protocol_meritve_v1";
 
 /* ---------- Nizkonivojski dostop ---------- */
 
