@@ -25,6 +25,12 @@ export interface Meal {
   timing: string[];
   opinion: string;
   critical?: boolean;  // true => zlati akcent
+  // Ocenjeni makri obroka (za "zaužito" števec). Ocena iz `items`, sredina
+  // navedenih količin; kjer so proteinske alternative, reprezentativno povprečje.
+  estKcal: number;
+  estBeljakovine: number; // g
+  estOH: number;          // g
+  estMascobe: number;     // g
 }
 
 export interface Supplement {
@@ -50,6 +56,11 @@ export const meals: Meal[] = [
       "Ščepec soli",
       "Kreatin 5 g",
     ],
+    // est: banana 120 g (~107 kcal, 27 OH) + whey 30 g (~120 kcal, 24 P); voda/sol/kreatin ~0.
+    estKcal: 230,
+    estBeljakovine: 25,
+    estOH: 30,
+    estMascobe: 2,
     optional: [],
     quickBenefits: ["⚡ takojšnja energija", "💪 več moči na treningu", "🧠 fokus kot laser"],
     ingredients: [
@@ -134,6 +145,11 @@ export const meals: Meal[] = [
       "Med 10–15 g",
       "Ščepec soli",
     ],
+    // est: whey 30 g (~120 kcal, 24 P) + banana 120 g (~107) + med ~12 g (~38); voda/sol ~0. Riž. vaflji so opcijski (ne šteti).
+    estKcal: 270,
+    estBeljakovine: 25,
+    estOH: 40,
+    estMascobe: 2,
     optional: ["3–5 navadnih riževih vafljev (30–40 g)"],
     quickBenefits: ["🚀 začetek regeneracije", "💪 zaščita in rast mišic", "🔋 hitro polnjenje energije"],
     ingredients: [
@@ -220,6 +236,11 @@ export const meals: Meal[] = [
       "Kokosovo mleko 30–50 ml",
       "Voda 1–2 dl",
     ],
+    // est: skuta ~225 g (~225 kcal, 29 P, 9 M) + ovseni 60 g (~222, 36 OH) + sadje ~125 g (~69) + med 10 g (~30) + kokos. mleko ~40 ml (~80, 8 M).
+    estKcal: 625,
+    estBeljakovine: 39,
+    estOH: 69,
+    estMascobe: 21,
     optional: ["cimet ali ščepec soli"],
     quickBenefits: ["🔋 stabilna energija", "🧠 fokus brez padca", "💪 dovolj proteinov"],
     ingredients: [
@@ -305,6 +326,11 @@ export const meals: Meal[] = [
     intro: "Pametna malica za zaščito mišic, stabilno energijo in fokus brez padca.",
     formula: "Sadje 150 g + oreščki 30 g",
     items: ["Sadje 150 g", "Oreščki 30 g"],
+    // est: sadje 150 g (~83 kcal, 20 OH) + oreščki 30 g (~186 kcal, 16 M, 6 P). Whey je opcijski (ne šteti).
+    estKcal: 270,
+    estBeljakovine: 7,
+    estOH: 25,
+    estMascobe: 16,
     optional: ["whey protein 30 g (z 200–300 ml vode) — po potrebi"],
     quickBenefits: ["🛡️ zaščita mišic", "⚖️ stabilna energija", "🧠 fokus brez crash-a"],
     ingredients: [
@@ -373,6 +399,11 @@ export const meals: Meal[] = [
       "Solata + paradižnik 150–250 g",
       "Olivno olje 10–15 g",
     ],
+    // est: povprečje proteinskih možnosti (piščanec/tuna/losos/goveje/jajca) ~277 kcal, 38 P, 13 M + OH vir ~90 g surovo / ~250 g krompir ~277 kcal, 60 OH + zelenjava+solata ~100 kcal + olje ~12 g (~110, 13 M).
+    estKcal: 765,
+    estBeljakovine: 51,
+    estOH: 79,
+    estMascobe: 28,
     optional: [],
     quickBenefits: ["🔥 glavni vir energije", "🧬 rast mišic", "🥗 odlična prebava"],
     ingredients: [
@@ -451,6 +482,11 @@ export const meals: Meal[] = [
     intro: "Ključni obrok za prehod iz dela nazaj v energijo, regeneracijo in stabilen večer.",
     formula: "Jajca 3–4 + riž 60 g ali kruh 80 g",
     items: ["Jajca 3–4", "Riž 60 g ali kruh 80 g"],
+    // est: jajca ~3,5 (~273 kcal, 22 P, 19 M) + OH vir riž 60 g / kruh 80 g povpr. (~214 kcal, 43 OH). Sadje/zelenjava opcijsko (ne šteto).
+    estKcal: 485,
+    estBeljakovine: 28,
+    estOH: 45,
+    estMascobe: 21,
     optional: ["1 kos sadja (banana ali jabolko)", "malo zelenjave"],
     quickBenefits: ["⚠️ prepreči energy crash", "🔄 regeneracija", "💪 mišična podpora"],
     ingredients: [
@@ -527,6 +563,11 @@ export const meals: Meal[] = [
       "Zelenjava 200 g (bučke + korenje + gobe) ali solata + paradižnik",
       "Olivno olje 5–8 g",
     ],
+    // est: protein povpr. (tuna/piščanec/puran 150 g / 3 jajca+beljak) ~189 kcal, 32 P + OH vir ~187 kcal, 39 OH + zelenjava 200 g (~50) + olje ~6,5 g (~57, 7 M).
+    estKcal: 490,
+    estBeljakovine: 40,
+    estOH: 49,
+    estMascobe: 16,
     optional: [],
     quickBenefits: ["⚡ stabilna energija do večera", "💪 dodatni protein za mišice", "😴 boljša priprava na noč"],
     ingredients: [
@@ -596,6 +637,11 @@ export const meals: Meal[] = [
     intro: "Zadnji obrok dneva za zaščito mišic in regeneracijo čez noč.",
     formula: "Skuta 200–250 g + voda 1–2 dl",
     items: ["Skuta 200–250 g", "Voda 1–2 dl"],
+    // est: skuta ~225 g (~225 kcal, 29 P, 9 M). Opcijski dodatki (maslo/oreščki) niso šteti.
+    estKcal: 225,
+    estBeljakovine: 29,
+    estOH: 8,
+    estMascobe: 9,
     optional: ["arašidovo maslo 15 g ali oreščki 20 g", "cimet ali kakav (opcijsko)"],
     quickBenefits: ["🌙 slow protein", "🔄 regeneracija čez noč", "💪 zaščita mišic"],
     ingredients: [
@@ -666,3 +712,34 @@ export const rules: string[] = [
   "Voda 3–4 L dnevno.",
   "Če si lačen, dodaj riž, krompir ali whey po potrebi.",
 ];
+
+/* ---------- Ocenjeni dnevni vnos (zaužito) ---------- */
+
+export interface DnevniMakri {
+  kcal: number;
+  beljakovine: number; // g
+  oh: number;          // g
+  mascobe: number;     // g
+}
+
+/** Obrok po protocolId (mealsDone hrani protocolId-je, npr. "m-0340"). */
+const MEAL_BY_PROTOCOL_ID: Record<string, Meal> = Object.fromEntries(
+  meals.map((m) => [m.protocolId, m]),
+);
+
+/**
+ * Sešteje OCENJENE makre obrokov z danimi protocolId-ji (npr. log.mealsDone).
+ * Neznani id-ji se tiho preskočijo. Čista funkcija — brez localStorage.
+ */
+export function sestejMakre(protocolIds: string[]): DnevniMakri {
+  const out: DnevniMakri = { kcal: 0, beljakovine: 0, oh: 0, mascobe: 0 };
+  for (const id of protocolIds) {
+    const m = MEAL_BY_PROTOCOL_ID[id];
+    if (!m) continue;
+    out.kcal += m.estKcal;
+    out.beljakovine += m.estBeljakovine;
+    out.oh += m.estOH;
+    out.mascobe += m.estMascobe;
+  }
+  return out;
+}

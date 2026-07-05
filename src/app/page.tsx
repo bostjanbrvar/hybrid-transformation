@@ -20,10 +20,13 @@ import {
   setWater,
   setSerije,
   lastSerijeFor,
+  dnevniVnos,
   type DayLog,
   type LoggedExercise,
   type LoggedSet,
 } from "@/lib/storage";
+import { getMakroCilj, type MakroRezultat } from "@/lib/makro";
+import type { DnevniMakri } from "@/lib/nutrition";
 import { progressionHint, type ProgressionHint } from "@/lib/progression";
 import { getTopCoachMessage, type CoachMsg } from "@/lib/coach";
 import { ExerciseEditor } from "@/components/ExerciseEditor";
@@ -60,16 +63,21 @@ export default function Home() {
   const [now, setNow] = useState<Date | null>(null);
   const [today, setToday] = useState<string | null>(null);
   const [log, setLog] = useState<DayLog | null>(null);
+  // Makro cilj (iz kalkulatorja) — za "zaužito vs cilj" števec. null = ni cilja.
+  const [makro, setMakro] = useState<MakroRezultat | null>(null);
 
   useEffect(() => {
     setNow(new Date());
     const key = todayKey();
     setToday(key);
     setLog(getDayLog(key));
+    setMakro(getMakroCilj()?.rezultat ?? null);
   }, []);
 
   const training: TrainingDay | null = now ? todaysTraining(now) : null;
   const meal: Meal | null = now ? nextMeal(now) : null;
+  // Ocenjeni zaužiti makri iz označenih obrokov (posodobi se ob vsakem toggle).
+  const vnos: DnevniMakri | null = log ? dnevniVnos(log) : null;
 
   function handleToggleHabit(habitId: HabitId) {
     if (!today) return;
@@ -170,6 +178,11 @@ export default function Home() {
           onToggle={handleToggleMeal}
         />
 
+        {/* 3b. Zaužito vs cilj — samo če je makro cilj in vsaj en obrok označen */}
+        {makro && vnos && log && log.mealsDone.length > 0 && (
+          <MacroIntakeRow goal={makro} vnos={vnos} />
+        )}
+
         {/* 4. Voda */}
         <WaterCard
           targetL={RULES.waterTargetL}
@@ -216,6 +229,64 @@ function CardLabel({ children }: { children: React.ReactNode }) {
     <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
       {children}
     </p>
+  );
+}
+
+/* ---------- Zaužito vs cilj (kompaktna vrstica) ---------- */
+
+function fmt0(n: number): string {
+  return Math.round(n).toLocaleString("sl-SI");
+}
+
+function MacroIntakeRow({
+  goal,
+  vnos,
+}: {
+  goal: MakroRezultat;
+  vnos: DnevniMakri;
+}) {
+  const pct =
+    goal.kalorije > 0
+      ? Math.min(100, Math.round((vnos.kcal / goal.kalorije) * 100))
+      : 0;
+
+  return (
+    <div className="rounded-2xl border border-[#9333EA]/15 bg-[#14101F] px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[#A855F7]/80">
+          Zaužito
+        </span>
+        <span className="text-sm font-semibold tabular-nums text-[#F5F5F7]">
+          ~{fmt0(vnos.kcal)} / {fmt0(goal.kalorije)} kcal
+        </span>
+      </div>
+
+      {/* Vijolična napredek vrstica (brez zlate — ni kritična oznaka) */}
+      <div className="mt-2 h-2 overflow-hidden rounded-full bg-black/30">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-[#9333EA] to-[#A855F7] transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs tabular-nums text-[#F5F5F7]/70">
+        <span>
+          B ~{vnos.beljakovine}/{goal.beljakovine.gramov} g
+        </span>
+        <span className="text-[#F5F5F7]/25">·</span>
+        <span>
+          OH ~{vnos.oh}/{goal.ogljikoviHidrati.gramov} g
+        </span>
+        <span className="text-[#F5F5F7]/25">·</span>
+        <span>
+          M ~{vnos.mascobe}/{goal.mascobe.gramov} g
+        </span>
+      </p>
+
+      <p className="mt-1 text-[10px] text-[#F5F5F7]/40">
+        Ocena na podlagi jedilnika.
+      </p>
+    </div>
   );
 }
 

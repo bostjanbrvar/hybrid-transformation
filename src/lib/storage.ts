@@ -15,6 +15,7 @@ import {
   todaysTraining,
   type HabitId,
 } from "@/lib/protocol";
+import { sestejMakre, type DnevniMakri } from "@/lib/nutrition";
 
 /* ---------- Ključi (uskladi z obstoječo HTML app) ---------- */
 
@@ -226,6 +227,14 @@ export function toggleMeal(date: string, mealId: string): DayLog {
   log.mealsDone = [...done];
   saveDayLog(log);
   return log;
+}
+
+/**
+ * Ocenjeni makro vnos za dan iz označenih obrokov (log.mealsDone). Vrednosti
+ * so OCENE iz jedilnika (nutrition.ts), ne izmerjeni vnos.
+ */
+export function dnevniVnos(log: DayLog): DnevniMakri {
+  return sestejMakre(log.mealsDone);
 }
 
 /** Nastavi popito vodo (ml, ne-negativno) in vrne posodobljen log. */

@@ -225,6 +225,10 @@ function MealCard({
                 Kritično
               </span>
             )}
+            {/* Ocenjene kalorije obroka (vijolično, ne zlato). */}
+            <span className="shrink-0 rounded-full bg-[#9333EA]/15 px-2.5 py-1 text-xs font-semibold tabular-nums text-[#A855F7]/90">
+              ~{meal.estKcal} kcal
+            </span>
           </div>
           <h2 className={`mt-2 text-lg font-black tracking-tight ${titleColor}`}>
             {meal.title}
