@@ -27,6 +27,7 @@ import {
 } from "@/lib/storage";
 import { getMakroCilj, type MakroRezultat } from "@/lib/makro";
 import type { DnevniMakri } from "@/lib/nutrition";
+import { tedenskiPregled, type TedenskiPregled } from "@/lib/teden";
 import { progressionHint, type ProgressionHint } from "@/lib/progression";
 import { getTopCoachMessage, type CoachMsg } from "@/lib/coach";
 import { ExerciseEditor } from "@/components/ExerciseEditor";
@@ -194,6 +195,9 @@ export default function Home() {
         {/* 5. Današnje navade */}
         <HabitsCard habits={log?.habits ?? null} onToggle={handleToggleHabit} />
 
+        {/* 5b. Ta teden (kompakten pregled zadnjih 7 dni) */}
+        <WeekCard />
+
         {/* 6. Opomniki */}
         <RemindersCard />
 
@@ -285,6 +289,50 @@ function MacroIntakeRow({
 
       <p className="mt-1 text-[10px] text-[#F5F5F7]/40">
         Ocena na podlagi jedilnika.
+      </p>
+    </div>
+  );
+}
+
+/* ---------- Ta teden (kompakten pregled) ---------- */
+
+function dniBeseda(n: number): string {
+  return n === 1 ? "dan" : "dni";
+}
+
+function WeekCard() {
+  // SSR-safe: bere localStorage šele po montaži (kot ostale kartice).
+  const [p, setP] = useState<TedenskiPregled | null>(null);
+
+  useEffect(() => {
+    setP(tedenskiPregled());
+  }, []);
+
+  // Skrij, dokler ni podatkov ali če je cel teden prazen.
+  if (!p || p.prazno) return null;
+
+  return (
+    <div className="rounded-2xl border border-[#9333EA]/15 bg-[#14101F] px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-[#A855F7]/80">
+          Ta teden
+        </span>
+        <span className="text-[10px] font-medium text-[#F5F5F7]/35">
+          zadnjih {p.dni} dni
+        </span>
+      </div>
+      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs tabular-nums text-[#F5F5F7]/80">
+        <span>
+          Trening {p.treningDnevi}/{p.plannedTraining}
+        </span>
+        <span className="text-[#F5F5F7]/25">·</span>
+        <span>Obroki ~{p.obrokiPct} %</span>
+        <span className="text-[#F5F5F7]/25">·</span>
+        <span>Navade {p.navadePct} %</span>
+        <span className="text-[#F5F5F7]/25">·</span>
+        <span className="font-semibold text-[#A855F7]">
+          Streak {p.streak} {dniBeseda(p.streak)}
+        </span>
       </p>
     </div>
   );
