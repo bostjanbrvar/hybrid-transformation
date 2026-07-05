@@ -276,6 +276,38 @@ function MealCard({
             </div>
           )}
 
+          {/* Alternative (ALI PA) — vizualno sekundarno, brez zlate */}
+          {meal.alternatives && meal.alternatives.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">
+                Ali pa
+              </p>
+              {meal.alternatives.map((alt) => (
+                <div
+                  key={alt.id}
+                  className="rounded-xl border border-[#9333EA]/30 bg-black/20 p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-bold text-[#F5F5F7]">
+                      {alt.naslov}
+                    </p>
+                    <span className="shrink-0 rounded-full bg-[#9333EA]/15 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-[#A855F7]/90">
+                      ~{alt.estKcal} kcal
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[#F5F5F7]/70">
+                    {alt.items.join(" · ")}
+                  </p>
+                  {alt.opomba && (
+                    <p className="mt-1.5 text-[11px] italic text-[#F5F5F7]/50">
+                      {alt.opomba}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Sestavine */}
           <div className="flex flex-col gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[#A855F7]/80">

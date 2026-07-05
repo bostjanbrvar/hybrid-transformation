@@ -8,10 +8,22 @@ export interface InfoBlock {
   points: string[];
 }
 
+/** Alternativa obroku (isti čas/namen, drugačna sestava). Prikaz v /prehrana. */
+export interface MealAlternative {
+  id: string;
+  naslov: string;
+  items: string[];
+  estKcal: number;
+  estBeljakovine: number; // g
+  estOH: number;          // g
+  estMascobe: number;     // g
+  opomba?: string;
+}
+
 export interface Meal {
   id: string;
   protocolId: string;  // stabilni id za localStorage (mealsDone), ROUTINE ref in opomnike (npr. "m-0340")
-  time: string;        // "HH:MM" — bere ga Capacitor scheduler (KORAK 5)
+  time: string;        // "HH:MM" (prikaz + izpeljava opomnikov v protocol.ts/reminders.ts)
   title: string;
   tagline: string;
   intro: string;
@@ -31,6 +43,10 @@ export interface Meal {
   estBeljakovine: number; // g
   estOH: number;          // g
   estMascobe: number;     // g
+  // Alternative istega obroka (za /prehrana "ALI PA:"). Makro števec vedno
+  // šteje PRIMARNE est vrednosti (glej sestejMakre) — alternative so dovolj
+  // blizu, da ločeno štetje ni vredno kompleksnosti.
+  alternatives?: MealAlternative[];
 }
 
 export interface Supplement {
@@ -241,6 +257,19 @@ export const meals: Meal[] = [
     estBeljakovine: 39,
     estOH: 69,
     estMascobe: 21,
+    alternatives: [
+      {
+        id: "m-0730-jajca-cottage",
+        naslov: "Jajca + cottage cheese",
+        items: ["2 celi jajci", "3 beljaki", "100 g cottage cheese", "Paradižnik"],
+        // est: 2 jajci (~156 kcal, 13 P, 11 M) + 3 beljaki (~51, 11 P) + cottage 100 g (~100, 11 P, 4 M) + paradižnik (~18); brez kruha (glej opombo).
+        estKcal: 325,
+        estBeljakovine: 35,
+        estOH: 9,
+        estMascobe: 15,
+        opomba: "Na trening dan dodaj kruh ali prepečenec za OH.",
+      },
+    ],
     optional: ["cimet ali ščepec soli"],
     quickBenefits: ["🔋 stabilna energija", "🧠 fokus brez padca", "💪 dovolj proteinov"],
     ingredients: [
@@ -331,6 +360,18 @@ export const meals: Meal[] = [
     estBeljakovine: 7,
     estOH: 25,
     estMascobe: 16,
+    alternatives: [
+      {
+        id: "m-1030-puding",
+        naslov: "Protein puding + sadje",
+        items: ["Protein puding Z'Bregov", "1 banana ali jabolko"],
+        // est: prot. puding Z'Bregov (~160 kcal, 20 P, 15 OH) + banana ~120 g (~107, 27 OH).
+        estKcal: 270,
+        estBeljakovine: 21,
+        estOH: 42,
+        estMascobe: 3,
+      },
+    ],
     optional: ["whey protein 30 g (z 200–300 ml vode) — po potrebi"],
     quickBenefits: ["🛡️ zaščita mišic", "⚖️ stabilna energija", "🧠 fokus brez crash-a"],
     ingredients: [
@@ -404,6 +445,31 @@ export const meals: Meal[] = [
     estBeljakovine: 51,
     estOH: 79,
     estMascobe: 28,
+    alternatives: [
+      {
+        id: "m-1330-jufka-piscanec",
+        naslov: "Jufka s piščancem",
+        items: ["400 g jufka s piščančjimi prsmi", "Zelena solata"],
+        // est: ~150 g jufka (~420 kcal, 78 OH) + ~180 g piščanec (~216, 42 P) + olje ~10 g (~90, 10 M) + solata (~15).
+        estKcal: 740,
+        estBeljakovine: 54,
+        estOH: 78,
+        estMascobe: 22,
+      },
+      {
+        id: "m-1330-testenine-meso",
+        naslov: "Testenine + mleto meso",
+        items: [
+          "1 vrečka Knorr Pasta Formagiana",
+          "230 g mletega piščanca ali puste govedine",
+        ],
+        // est: vrečka Knorr Pasta (~480 kcal, 80 OH, 14 P) + 230 g mleto meso povpr. piščanec/govedina (~370, 53 P, 18 M).
+        estKcal: 850,
+        estBeljakovine: 67,
+        estOH: 80,
+        estMascobe: 29,
+      },
+    ],
     optional: [],
     quickBenefits: ["🔥 glavni vir energije", "🧬 rast mišic", "🥗 odlična prebava"],
     ingredients: [
@@ -487,6 +553,29 @@ export const meals: Meal[] = [
     estBeljakovine: 28,
     estOH: 45,
     estMascobe: 21,
+    alternatives: [
+      {
+        id: "m-1515-skutina-pita",
+        naslov: "Skutina pita",
+        items: ["200 g skutine pite"],
+        // est: skutina pita ~250 kcal/100 g → 200 g (~500 kcal, 16 P, 50 OH, 26 M).
+        estKcal: 500,
+        estBeljakovine: 16,
+        estOH: 50,
+        estMascobe: 26,
+      },
+      {
+        id: "m-1515-kebab-bovla",
+        naslov: "Kebab bovla",
+        items: ["SPAR toGO piščančja bovla"],
+        // est: pripravljena piščančja bovla ~450 g (~500 kcal, 35 P, 50 OH, 15 M).
+        estKcal: 500,
+        estBeljakovine: 35,
+        estOH: 50,
+        estMascobe: 15,
+        opomba: "Praktično po službi, brez kuhanja.",
+      },
+    ],
     optional: ["1 kos sadja (banana ali jabolko)", "malo zelenjave"],
     quickBenefits: ["⚠️ prepreči energy crash", "🔄 regeneracija", "💪 mišična podpora"],
     ingredients: [
@@ -568,6 +657,18 @@ export const meals: Meal[] = [
     estBeljakovine: 40,
     estOH: 49,
     estMascobe: 16,
+    alternatives: [
+      {
+        id: "m-1830-jufki-govedina",
+        naslov: "Jufki + govedina",
+        items: ["2 polnozrnati jufki", "250 g puste mlete govedine"],
+        // est: 2 polnozrn. jufki (~340 kcal, 56 OH, 8 M) + 250 g pusta mleta govedina (~425, 65 P, 20 M).
+        estKcal: 765,
+        estBeljakovine: 75,
+        estOH: 56,
+        estMascobe: 28,
+      },
+    ],
     optional: [],
     quickBenefits: ["⚡ stabilna energija do večera", "💪 dodatni protein za mišice", "😴 boljša priprava na noč"],
     ingredients: [
@@ -642,6 +743,19 @@ export const meals: Meal[] = [
     estBeljakovine: 29,
     estOH: 8,
     estMascobe: 9,
+    alternatives: [
+      {
+        id: "m-2100-grski-whey",
+        naslov: "Grški jogurt + whey",
+        items: ["200 g grški jogurt", "1 merica whey", "100–150 g jagodičevja"],
+        // est: grški jogurt 200 g (~180 kcal, 20 P, 8 M) + whey 30 g (~120, 24 P) + jagodičevje ~125 g (~56, 13 OH).
+        estKcal: 355,
+        estBeljakovine: 45,
+        estOH: 24,
+        estMascobe: 10,
+        opomba: "Riževi vaflji opcijsko.",
+      },
+    ],
     optional: ["arašidovo maslo 15 g ali oreščki 20 g", "cimet ali kakav (opcijsko)"],
     quickBenefits: ["🌙 slow protein", "🔄 regeneracija čez noč", "💪 zaščita mišic"],
     ingredients: [
@@ -729,7 +843,9 @@ const MEAL_BY_PROTOCOL_ID: Record<string, Meal> = Object.fromEntries(
 
 /**
  * Sešteje OCENJENE makre obrokov z danimi protocolId-ji (npr. log.mealsDone).
- * Neznani id-ji se tiho preskočijo. Čista funkcija — brez localStorage.
+ * Vedno šteje PRIMARNE est vrednosti obroka — tudi če je uporabnik pojedel
+ * alternativo (alternatives), saj so ocene dovolj blizu. Neznani id-ji se tiho
+ * preskočijo. Čista funkcija — brez localStorage.
  */
 export function sestejMakre(protocolIds: string[]): DnevniMakri {
   const out: DnevniMakri = { kcal: 0, beljakovine: 0, oh: 0, mascobe: 0 };
