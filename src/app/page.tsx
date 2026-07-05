@@ -198,6 +198,15 @@ export default function Home() {
         {/* 5b. Ta teden (kompakten pregled zadnjih 7 dni) */}
         <WeekCard />
 
+        {/* 5c. Povzetek dneva */}
+        <Link
+          href="/povzetek"
+          className="flex items-center justify-between rounded-2xl border border-[#9333EA]/40 bg-[#9333EA]/10 px-4 py-3 text-sm font-bold text-[#A855F7] transition active:scale-[0.98]"
+        >
+          <span>Povzetek dneva</span>
+          <span aria-hidden="true">→</span>
+        </Link>
+
         {/* 6. Opomniki */}
         <RemindersCard />
 
