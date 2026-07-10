@@ -30,6 +30,7 @@ import type { DnevniMakri } from "@/lib/nutrition";
 import { tedenskiPregled, type TedenskiPregled } from "@/lib/teden";
 import { progressionHint, type ProgressionHint } from "@/lib/progression";
 import { getTopCoachMessage, type CoachMsg } from "@/lib/coach";
+import { CARD_ICON } from "@/lib/icons";
 import { ExerciseEditor } from "@/components/ExerciseEditor";
 import {
   isNative,
@@ -204,7 +205,7 @@ export default function Home() {
           href="/povzetek"
           className="flex items-center justify-between rounded-2xl border border-[#9333EA]/40 bg-[#9333EA]/10 px-4 py-3 text-sm font-bold text-[#A855F7] transition active:scale-[0.98]"
         >
-          <span>Povzetek dneva</span>
+          <span>{CARD_ICON["povzetek"] ?? ""} Povzetek dneva</span>
           <span aria-hidden="true">→</span>
         </Link>
 
@@ -325,7 +326,7 @@ function WeekCard() {
     <div className="rounded-2xl border border-[#9333EA]/15 bg-[#14101F] px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[10px] font-bold uppercase tracking-widest text-[#A855F7]/80">
-          Ta teden
+          {CARD_ICON["tedenski pregled"] ?? ""} Ta teden
         </span>
         <span className="text-[10px] font-medium text-[#F5F5F7]/35">
           zadnjih {p.dni} dni
@@ -380,7 +381,7 @@ function CoachCard() {
     >
       <span className="flex min-w-0 items-center gap-2.5">
         <span className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-[#A855F7]/80">
-          Coach
+          {CARD_ICON["coach"] ?? ""} Coach
         </span>
         <span className="truncate text-sm font-semibold text-[#F5F5F7]">
           {label}
@@ -454,7 +455,7 @@ function TrainingCard({
 
   return (
     <Card>
-      <CardLabel>Danes treniraš</CardLabel>
+      <CardLabel>{CARD_ICON["trening"] ?? ""} Danes treniraš</CardLabel>
 
       {!training ? (
         <Placeholder lines={3} />
@@ -614,7 +615,7 @@ function MealCard({
   return (
     <Card>
       <div className="flex items-center justify-between">
-        <CardLabel>Naslednji obrok</CardLabel>
+        <CardLabel>{CARD_ICON["prehrana"] ?? ""} Naslednji obrok</CardLabel>
         {meal?.critical && (
           <span className="rounded-full bg-[#F5A623]/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#FFB800]">
             Kritično
@@ -873,7 +874,7 @@ function RemindersCard() {
 
   return (
     <Card>
-      <CardLabel>Opomniki</CardLabel>
+      <CardLabel>{CARD_ICON["opomniki"] ?? ""} Opomniki</CardLabel>
 
       {supported === null ? (
         <Placeholder lines={2} />
