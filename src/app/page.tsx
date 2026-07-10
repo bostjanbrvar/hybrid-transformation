@@ -356,11 +356,29 @@ function WeekCard() {
 
 /* ---------- Razpored tedna (fiksni plan naprej) ---------- */
 
+/** Desni stolpec ene vaje: teža in/ali ponovitve (enak vzorec kot /danes). */
+function VajaMeta({ ex }: { ex: TrainingDay["exercises"][number] }) {
+  if (ex.defaultWeightKg == null && !ex.targetReps) return null;
+  return (
+    <span className="shrink-0 text-right text-xs text-[#F5F5F7]/60">
+      {ex.defaultWeightKg != null && (
+        <span className="font-semibold text-[#A855F7]">
+          {ex.defaultWeightKg} kg
+        </span>
+      )}
+      {ex.defaultWeightKg != null && ex.targetReps && " · "}
+      {ex.targetReps && <span>{ex.targetReps}</span>}
+    </span>
+  );
+}
+
 function WeekScheduleCard() {
   // Dnevi so fiksni (TRAINING_DAYS) → seznam se lahko renderira tudi na
   // strežniku. Poudarek današnjega dne pa je odvisen od datuma, zato ključ
   // izračunamo šele po montaži (SSR-safe, brez hydration neskladja).
   const [danesKljuc, setDanesKljuc] = useState<string | null>(null);
+  // Odprt dan (accordion): en naenkrat, ponovni klik zapre.
+  const [odprt, setOdprt] = useState<string | null>(null);
 
   useEffect(() => {
     setDanesKljuc(trainingKeyForDate(new Date()));
@@ -374,29 +392,96 @@ function WeekScheduleCard() {
         {Object.values(TRAINING_DAYS).map((dan) => {
           const jeDanes = danesKljuc === dan.key;
           const jePocitek = dan.type === "recovery";
+          const jeOdprt = odprt === dan.key;
+          const glavne = dan.exercises.filter((ex) => !ex.bonus);
+          const bonus = dan.exercises.filter((ex) => ex.bonus);
           return (
             <li
               key={dan.key}
-              className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 transition ${
+              className={`overflow-hidden rounded-xl border transition ${
                 jeDanes
                   ? "border-[#A855F7]/60 bg-[#9333EA]/20"
                   : "border-transparent bg-black/20"
               }`}
             >
-              <span
-                className={`text-sm font-semibold ${
-                  jePocitek ? "text-[#F5F5F7]/45" : "text-[#F5F5F7]"
-                }`}
+              {/* Vrstica dneva (klik razpre/zapre) */}
+              <button
+                type="button"
+                onClick={() => setOdprt((k) => (k === dan.key ? null : dan.key))}
+                aria-expanded={jeOdprt}
+                className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left active:scale-[0.99]"
               >
-                {dan.label}
-              </span>
-              <span
-                className={`shrink-0 text-right text-xs font-semibold ${
-                  jePocitek ? "text-[#F5F5F7]/35" : "text-[#A855F7]"
-                }`}
-              >
-                {dan.focus}
-              </span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className={`shrink-0 text-[10px] text-[#A855F7] transition-transform ${
+                      jeOdprt ? "rotate-90" : ""
+                    }`}
+                  >
+                    ▶
+                  </span>
+                  <span
+                    className={`truncate text-sm font-semibold ${
+                      jePocitek ? "text-[#F5F5F7]/45" : "text-[#F5F5F7]"
+                    }`}
+                  >
+                    {dan.label}
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 text-right text-xs font-semibold ${
+                    jePocitek ? "text-[#F5F5F7]/35" : "text-[#A855F7]"
+                  }`}
+                >
+                  {dan.focus}
+                </span>
+              </button>
+
+              {/* Razprte podrobnosti */}
+              {jeOdprt && (
+                <div className="border-t border-[#9333EA]/15 px-3 py-3">
+                  {glavne.length === 0 ? (
+                    // Recovery brez vaj → samo focus opis.
+                    <p className="text-sm text-[#F5F5F7]/60">{dan.focus}</p>
+                  ) : (
+                    <ul className="flex flex-col gap-2">
+                      {glavne.map((ex, i) => (
+                        <li
+                          key={i}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-black/20 px-3 py-2"
+                        >
+                          <span className="text-sm font-medium text-[#F5F5F7]/90">
+                            {ex.name}
+                          </span>
+                          <VajaMeta ex={ex} />
+                        </li>
+                      ))}
+
+                      {bonus.length > 0 && (
+                        <li className="mt-1 border-t border-[#9333EA]/15 pt-2">
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-[#A855F7]/70">
+                            ✦ Bonus · opcijsko
+                          </p>
+                        </li>
+                      )}
+                      {bonus.map((ex, i) => (
+                        <li
+                          key={`bonus-${i}`}
+                          className="flex items-center justify-between gap-3 rounded-lg bg-black/20 px-3 py-2"
+                        >
+                          <span className="flex items-center gap-2 text-sm font-medium text-[#F5F5F7]/90">
+                            {ex.name}
+                            <span className="shrink-0 rounded-full bg-[#9333EA]/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#A855F7]">
+                              Bonus
+                            </span>
+                          </span>
+                          <VajaMeta ex={ex} />
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
             </li>
           );
         })}
