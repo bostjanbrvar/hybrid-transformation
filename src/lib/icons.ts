@@ -16,6 +16,7 @@ export const CARD_ICON: Record<string, string> = {
   coach: "🧠", // brain
   povzetek: "📊", // bar chart
   "tedenski pregled": "📅", // calendar
+  razpored: "📋", // clipboard (notes/seznam)
   heatmap: "🔥", // fire
   opomniki: "⏰", // alarm clock
 };

@@ -5,6 +5,8 @@ import Link from "next/link";
 import {
   todaysTraining,
   nextMeal,
+  trainingKeyForDate,
+  TRAINING_DAYS,
   RULES,
   HABITS,
   NUTRITION_RULES,
@@ -200,6 +202,9 @@ export default function Home() {
         {/* 5b. Ta teden (kompakten pregled zadnjih 7 dni) */}
         <WeekCard />
 
+        {/* 5b2. Razpored tedna (fiksni plan naprej, PON→VIKEND) */}
+        <WeekScheduleCard />
+
         {/* 5c. Povzetek dneva */}
         <Link
           href="/povzetek"
@@ -346,6 +351,57 @@ function WeekCard() {
         </span>
       </p>
     </div>
+  );
+}
+
+/* ---------- Razpored tedna (fiksni plan naprej) ---------- */
+
+function WeekScheduleCard() {
+  // Dnevi so fiksni (TRAINING_DAYS) → seznam se lahko renderira tudi na
+  // strežniku. Poudarek današnjega dne pa je odvisen od datuma, zato ključ
+  // izračunamo šele po montaži (SSR-safe, brez hydration neskladja).
+  const [danesKljuc, setDanesKljuc] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDanesKljuc(trainingKeyForDate(new Date()));
+  }, []);
+
+  return (
+    <Card>
+      <CardLabel>{CARD_ICON["razpored"] ?? ""} Razpored tedna</CardLabel>
+
+      <ul className="mt-3 flex flex-col gap-2">
+        {Object.values(TRAINING_DAYS).map((dan) => {
+          const jeDanes = danesKljuc === dan.key;
+          const jePocitek = dan.type === "recovery";
+          return (
+            <li
+              key={dan.key}
+              className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 transition ${
+                jeDanes
+                  ? "border-[#A855F7]/60 bg-[#9333EA]/20"
+                  : "border-transparent bg-black/20"
+              }`}
+            >
+              <span
+                className={`text-sm font-semibold ${
+                  jePocitek ? "text-[#F5F5F7]/45" : "text-[#F5F5F7]"
+                }`}
+              >
+                {dan.label}
+              </span>
+              <span
+                className={`shrink-0 text-right text-xs font-semibold ${
+                  jePocitek ? "text-[#F5F5F7]/35" : "text-[#A855F7]"
+                }`}
+              >
+                {dan.focus}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </Card>
   );
 }
 
