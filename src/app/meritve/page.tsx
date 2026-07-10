@@ -64,6 +64,7 @@ export default function MeritvePage() {
   const [kvadriceps, setKvadriceps] = useState("");
   const [opomba, setOpomba] = useState("");
   const [saved, setSaved] = useState(false);
+  const [napaka, setNapaka] = useState("");
   const [vse, setVse] = useState<Meritev[]>([]);
 
   // SSR-safe: vse beremo šele po montaži.
@@ -93,7 +94,7 @@ export default function MeritvePage() {
 
   function handleSave() {
     if (!datum) return;
-    saveMeritev({
+    const ok = saveMeritev({
       datum,
       tezaKg: num(teza),
       pasCm: num(pas),
@@ -101,15 +102,31 @@ export default function MeritvePage() {
       kvadricepsCm: num(kvadriceps),
       opomba: opomba.trim() === "" ? undefined : opomba.trim(),
     });
+    if (!ok) {
+      setSaved(false);
+      setNapaka(
+        "Zapis ni uspel — shramba ni dostopna ali je polna. Poglej konzolo.",
+      );
+      return;
+    }
     setVse(getVseMeritve());
     napolni(datum); // odraža združeno stanje (merge ohrani prejšnja polja)
+    setNapaka("");
     setSaved(true);
   }
 
   function handleDelete(d: string) {
-    deleteMeritev(d);
+    const ok = deleteMeritev(d);
+    if (!ok) {
+      setSaved(false);
+      setNapaka(
+        "Zapis ni uspel — shramba ni dostopna ali je polna. Poglej konzolo.",
+      );
+      return;
+    }
     setVse(getVseMeritve());
     if (d === datum) napolni(datum);
+    setNapaka("");
     setSaved(false);
   }
 
@@ -261,9 +278,15 @@ export default function MeritvePage() {
                 Shrani meritev
               </button>
 
-              {saved && (
+              {saved && !napaka && (
                 <p className="text-center text-sm font-semibold text-[#FFB800]">
                   ✓ Shranjeno
+                </p>
+              )}
+
+              {napaka && (
+                <p className="text-center text-sm font-semibold text-[#F87171]">
+                  {napaka}
                 </p>
               )}
             </div>

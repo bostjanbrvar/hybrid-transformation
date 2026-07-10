@@ -44,12 +44,16 @@ function readAll(): Record<string, Meritev> {
   }
 }
 
-function writeAll(all: Record<string, Meritev>): void {
-  if (typeof window === "undefined") return;
+/** Zapiše celotno mapo. Vrne true ob uspehu, false ob napaki. */
+function writeAll(all: Record<string, Meritev>): boolean {
+  if (typeof window === "undefined") return false;
   try {
     window.localStorage.setItem(MERITVE_KEY, JSON.stringify(all));
-  } catch {
-    // tiho ignoriraj (poln prostor / zaseben način)
+    return true;
+  } catch (err) {
+    // poln prostor / zaseben način — javi v konzolo, ne skrivaj tiho
+    console.error("meritve: zapis v localStorage ni uspel", err);
+    return false;
   }
 }
 
@@ -63,8 +67,9 @@ export function getMeritev(datum: string): Meritev | undefined {
 /**
  * Upsert po datumu z MERGE: definirana polja prepišejo, prazna (undefined)
  * NE brišejo obstoječih. Za popolno odstranitev uporabi deleteMeritev.
+ * Vrne true ob uspešnem zapisu, false če shramba ni dostopna/polna.
  */
-export function saveMeritev(meritev: Meritev): Meritev {
+export function saveMeritev(meritev: Meritev): boolean {
   const all = readAll();
   const obstojec = all[meritev.datum] ?? { datum: meritev.datum };
 
@@ -78,8 +83,7 @@ export function saveMeritev(meritev: Meritev): Meritev {
   if (meritev.opomba !== undefined) zdruzen.opomba = meritev.opomba;
 
   all[meritev.datum] = zdruzen;
-  writeAll(all);
-  return zdruzen;
+  return writeAll(all);
 }
 
 /** Vse meritve, sortirane po datumu NARAŠČAJOČE. */
@@ -89,13 +93,17 @@ export function getVseMeritve(): Meritev[] {
   );
 }
 
-/** Izbriše meritev za datum. */
-export function deleteMeritev(datum: string): void {
+/**
+ * Izbriše meritev za datum. Vrne true ob uspešnem zapisu (ali če meritve
+ * ni bilo), false če shramba ni dostopna/polna.
+ */
+export function deleteMeritev(datum: string): boolean {
   const all = readAll();
   if (datum in all) {
     delete all[datum];
-    writeAll(all);
+    return writeAll(all);
   }
+  return true;
 }
 
 /* ---------- Analitika: drseče povprečje ---------- */
